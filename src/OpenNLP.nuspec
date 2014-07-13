@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>OpenNLP.NET</id>
+    <version>0.0.1</version>
+    <authors>@authors@</authors>
+    <owners>Sergey Tihon</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <iconUrl>https://github.com/sergey-tihon/OpenNLP.NET/blob/master/docs/files/img/logo.png?raw=true</iconUrl>
+    <projectUrl>https://github.com/sergey-tihon/OpenNLP.NET</projectUrl>
+    <description>@description@</description>
+    <tags>NLP OpenNLP Tokenizer Categorizer Chunker Parser POS NER</tags>
+    <dependencies>
+      <dependency id="IKVM" version="[7.4.5196]" />
+    </dependencies>
+  </metadata>
+</package>
