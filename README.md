@@ -1,4 +1,6 @@
-OpenNLP for .NET
+[![Build status](https://ci.appveyor.com/api/projects/status/0wh9dw80mm55v7pg?svg=true)](https://ci.appveyor.com/project/sergey-tihon/opennlp-net)
+
+OpenNLP for .NET [![NuGet Status](http://img.shields.io/nuget/v/OpenNLP.NET.svg?style=flat)](https://www.nuget.org/packages/OpenNLP.NET/)
 =====================
 
 `OpenNLP for .NET` is a port of OpenNLP to .NET.

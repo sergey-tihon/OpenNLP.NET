@@ -1,0 +1,33 @@
+NUGET
+  remote: https://nuget.org/api/v2
+  specs:
+    FAKE (3.15.0)
+    FSharp.Management (0.2.0)
+    FsUnit (1.3.0.1)
+      NUnit (>= 2.6.3)
+    IKVM (8.0.5449.1)
+    NuGet.CommandLine (2.8.3)
+    NUnit (2.6.3)
+    NUnit.Runners (2.6.3)
+HTTP
+  remote: http://www.frijters.net
+  specs:
+    ikvmbin-8.0.5449.0.zip (/ikvmbin-8.0.5449.0.zip)
+  remote: http://ftp.byfly.by
+  specs:
+    apache-opennlp-1.5.3-bin.zip (/pub/apache.org//opennlp/opennlp-1.5.3/apache-opennlp-1.5.3-bin.zip)
+  remote: http://opennlp.sourceforge.net
+  specs:
+    en-chunker.bin (/models-1.5/en-chunker.bin)
+    en-ner-date.bin (/models-1.5/en-ner-date.bin)
+    en-ner-location.bin (/models-1.5/en-ner-location.bin)
+    en-ner-money.bin (/models-1.5/en-ner-money.bin)
+    en-ner-organization.bin (/models-1.5/en-ner-organization.bin)
+    en-ner-percentage.bin (/models-1.5/en-ner-percentage.bin)
+    en-ner-person.bin (/models-1.5/en-ner-person.bin)
+    en-ner-time.bin (/models-1.5/en-ner-time.bin)
+    en-parser-chunking.bin (/models-1.5/en-parser-chunking.bin)
+    en-pos-maxent.bin (/models-1.5/en-pos-maxent.bin)
+    en-pos-perceptron.bin (/models-1.5/en-pos-perceptron.bin)
+    en-sent.bin (/models-1.5/en-sent.bin)
+    en-token.bin (/models-1.5/en-token.bin)

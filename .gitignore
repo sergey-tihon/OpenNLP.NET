@@ -177,8 +177,16 @@ nuget/*.nupkg
 # Project specific directories and files
 # ===================================================
 
-# Download folder used for origin Stanford archives
-src/Download
+# Nuget outputs
+nuget/*.nupkg
+release.cmd
+release.sh
+localpackages/
+paket-files
+*.orig
+.paket/paket.exe
+docs/content/license.md
+docs/content/release-notes.md
 
 # Secret key
 src/Stanford.NLP.snk

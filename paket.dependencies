@@ -1,0 +1,27 @@
+source https://nuget.org/api/v2
+
+nuget NUnit 2.6.3
+nuget NUnit.Runners 2.6.3
+nuget Nuget.CommandLine
+nuget FAKE
+
+nuget IKVM
+nuget FSharp.Management
+nuget FsUnit 1.3.0.1
+
+http http://www.frijters.net/ikvmbin-8.0.5449.0.zip
+http http://ftp.byfly.by/pub/apache.org//opennlp/opennlp-1.5.3/apache-opennlp-1.5.3-bin.zip
+
+http http://opennlp.sourceforge.net/models-1.5/en-token.bin
+http http://opennlp.sourceforge.net/models-1.5/en-sent.bin
+http http://opennlp.sourceforge.net/models-1.5/en-pos-maxent.bin
+http http://opennlp.sourceforge.net/models-1.5/en-pos-perceptron.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-date.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-location.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-money.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-organization.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-percentage.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-person.bin
+http http://opennlp.sourceforge.net/models-1.5/en-ner-time.bin
+http http://opennlp.sourceforge.net/models-1.5/en-chunker.bin
+http http://opennlp.sourceforge.net/models-1.5/en-parser-chunking.bin
