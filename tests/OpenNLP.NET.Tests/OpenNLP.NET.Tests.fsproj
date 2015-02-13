@@ -33,21 +33,15 @@
     <DocumentationFile>bin\Release\OpenNLP.NET.Tests.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="jwnl-1.3.3">
-      <HintPath>..\..\bin\lib\jwnl-1.3.3.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
-    <Reference Include="opennlp-maxent-3.0.3">
-      <HintPath>..\..\bin\lib\opennlp-maxent-3.0.3.dll</HintPath>
+    <Reference Include="opennlp-tools-1.6.0">
+      <HintPath>..\..\bin\lib\opennlp-tools-1.6.0.dll</HintPath>
     </Reference>
-    <Reference Include="opennlp-tools-1.5.3">
-      <HintPath>..\..\bin\lib\opennlp-tools-1.5.3.dll</HintPath>
-    </Reference>
-    <Reference Include="opennlp-uima-1.5.3">
-      <HintPath>..\..\bin\lib\opennlp-uima-1.5.3.dll</HintPath>
+    <Reference Include="opennlp-uima-1.6.0">
+      <HintPath>..\..\bin\lib\opennlp-uima-1.6.0.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
