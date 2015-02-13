@@ -1,9 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "OpenNLP.NET.Tests", "tests\OpenNLP.NET.Tests\OpenNLP.NET.Tests.fsproj", "{93A74FF1-B3E0-4C16-8DB2-6F6738BF97C4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{805AEF7A-E1ED-40EE-893F-46A59EDC9C2F}"
+	ProjectSection(SolutionItems) = preProject
+		build.fsx = build.fsx
+		nuget\OpenNLP.nuspec = nuget\OpenNLP.nuspec
+		paket.dependencies = paket.dependencies
+		RELEASE_NOTES.md = RELEASE_NOTES.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

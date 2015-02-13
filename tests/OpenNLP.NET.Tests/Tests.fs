@@ -4,7 +4,7 @@ open NUnit.Framework
 open FsUnit
 open java.io
 
-let [<Literal>] downloads = __SOURCE_DIRECTORY__ + @"..\..\..\src\Download\"
+let [<Literal>] downloads = __SOURCE_DIRECTORY__ + @"..\..\..\paket-files\opennlp.sourceforge.net"
 type Models = FSharp.Management.FileSystem<downloads>
 
 open opennlp.tools.sentdetect
