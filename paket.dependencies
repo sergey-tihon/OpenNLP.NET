@@ -10,7 +10,7 @@ nuget FSharp.Management
 nuget FsUnit 1.3.0.1
 
 http http://www.frijters.net/ikvmbin-8.0.5449.1.zip
-http http://people.apache.org/~colen/releases/opennlp-1.6.0/rc2/apache-opennlp-1.6.0-bin.zip
+http http://ftp.byfly.by/pub/apache.org//opennlp/opennlp-1.6.0/apache-opennlp-1.6.0-bin.zip
 
 http http://opennlp.sourceforge.net/models-1.5/en-token.bin
 http http://opennlp.sourceforge.net/models-1.5/en-sent.bin

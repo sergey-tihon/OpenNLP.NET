@@ -52,7 +52,7 @@ let restoreFolderFromFile folder zipFile =
 // Location of IKVM Compiler & ildasm / ilasm
 let ikvmc = root.``paket-files``.``www.frijters.net``.``ikvm-8.0.5449.1``.bin.``ikvmc.exe``
 let ildasm = @"c:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Bin\x64\ildasm.exe"
-let ilasm =  @"c:\Windows\Microsoft.NET\Framework64\v2.0.50727\ilasm.exe" 
+let ilasm =  @"c:\Windows\Microsoft.NET\Framework64\v2.0.50727\ilasm.exe"
 
 type IKVMcTask(jar:string) =
     member val JarFile = jar
@@ -142,7 +142,7 @@ Target "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-type openNLPDir = root.``paket-files``.``people.apache.org``.``apache-opennlp-1.6.0``.lib
+type openNLPDir = root.``paket-files``.``ftp.byfly.by``.``apache-opennlp-1.6.0``.lib
 
 Target "Compile" (fun _ ->
     let ikvmDir  = @"bin\lib"

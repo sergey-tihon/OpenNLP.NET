@@ -13,9 +13,9 @@ HTTP
   remote: http://www.frijters.net
   specs:
     ikvmbin-8.0.5449.1.zip (/ikvmbin-8.0.5449.1.zip)
-  remote: http://people.apache.org
+  remote: http://ftp.byfly.by
   specs:
-    apache-opennlp-1.6.0-bin.zip (/~colen/releases/opennlp-1.6.0/rc2/apache-opennlp-1.6.0-bin.zip)
+    apache-opennlp-1.6.0-bin.zip (/pub/apache.org//opennlp/opennlp-1.6.0/apache-opennlp-1.6.0-bin.zip)
   remote: http://opennlp.sourceforge.net
   specs:
     en-chunker.bin (/models-1.5/en-chunker.bin)

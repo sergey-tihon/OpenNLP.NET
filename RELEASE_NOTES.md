@@ -1,5 +1,8 @@
+#### 1.6.0 - July 13 2015
+* New version of OpenNLP 1.6
+
 #### 1.6.0-rc2 - February 13 2015
-* New verison of OpenNLP 1.6-rc2
+* New version of OpenNLP 1.6-rc2
 * Repository migrated to paket
 * New IKVM for Java 8 -rc1
 
