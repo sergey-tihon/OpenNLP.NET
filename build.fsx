@@ -50,7 +50,7 @@ let restoreFolderFromFile folder zipFile =
         zipFile |> unZipTo folder
 
 // Location of IKVM Compiler & ildasm / ilasm
-let ikvmc = root.``paket-files``.``www.frijters.net``.``ikvm-8.0.5449.1``.bin.``ikvmc.exe``
+let ikvmc = root.``paket-files``.``www.frijters.net``.``ikvm-8.1.5717.0``.bin.``ikvmc.exe``
 let ildasm = @"c:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Bin\x64\ildasm.exe"
 let ilasm =  @"c:\Windows\Microsoft.NET\Framework64\v2.0.50727\ilasm.exe"
 
@@ -142,14 +142,18 @@ Target "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-type openNLPDir = root.``paket-files``.``ftp.byfly.by``.``apache-opennlp-1.6.0``.lib
+type openNLPDir = root.``paket-files``.``ftp.byfly.by``.``apache-opennlp-1.8.4``.lib
 
 Target "Compile" (fun _ ->
     let ikvmDir  = @"bin\lib"
     CreateDir ikvmDir
-
-    [IKVMcTask(openNLPDir.``opennlp-uima-1.6.0.jar``, Version=release.AssemblyVersion,
-           Dependencies = [IKVMcTask(openNLPDir.``opennlp-tools-1.6.0.jar``, Version=release.AssemblyVersion)])]
+    
+    [IKVMcTask(openNLPDir.``opennlp-uima-1.8.4.jar``, Version=release.AssemblyVersion,
+           Dependencies = 
+            [
+                IKVMcTask(openNLPDir.``opennlp-tools-1.8.4.jar``, Version=release.AssemblyVersion)
+            ])
+    ]
     |> IKVMCompile ikvmDir @".\OpenNLP.snk"
 )
 

@@ -1,4 +1,5 @@
-﻿FSharp.Management
+﻿FSharp.Core
+FSharp.Management
 FsUnit
 IKVM
 NUnit
