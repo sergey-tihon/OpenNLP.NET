@@ -188,5 +188,8 @@ paket-files
 docs/content/license.md
 docs/content/release-notes.md
 
+# Paket
+.paket/paket.exe
+
 # Secret key
 src/Stanford.NLP.snk
