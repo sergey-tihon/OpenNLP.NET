@@ -11,6 +11,7 @@
     <AssemblyName>OpenNLP.NET.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Name>OpenNLP.NET.Tests</Name>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,11 +34,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
-    <Reference Include="opennlp-tools-1.8.4">
-      <HintPath>..\..\bin\lib\opennlp-tools-1.8.4.dll</HintPath>
+    <Reference Include="opennlp-tools-1.9.1">
+      <HintPath>..\..\bin\lib\opennlp-tools-1.9.1.dll</HintPath>
     </Reference>
-    <Reference Include="opennlp-uima-1.8.4">
-      <HintPath>..\..\bin\lib\opennlp-uima-1.8.4.dll</HintPath>
+    <Reference Include="opennlp-uima-1.9.1">
+      <HintPath>..\..\bin\lib\opennlp-uima-1.9.1.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

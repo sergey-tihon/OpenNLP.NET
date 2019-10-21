@@ -11,8 +11,8 @@ nuget IKVM
 nuget FSharp.Management
 nuget FsUnit 1.3.0.1
 
-http http://www.frijters.net/ikvmbin-8.1.5717.0.zip
-http http://ftp.byfly.by/pub/apache.org/opennlp/opennlp-1.8.4/apache-opennlp-1.8.4-bin.zip
+http https://www.frijters.net/ikvmbin-8.1.5717.0.zip
+http https://archive.apache.org/dist/opennlp/opennlp-1.9.1/apache-opennlp-1.9.1-bin.zip
 
 http http://opennlp.sourceforge.net/models-1.5/en-token.bin
 http http://opennlp.sourceforge.net/models-1.5/en-sent.bin

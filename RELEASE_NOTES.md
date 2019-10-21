@@ -1,3 +1,6 @@
+#### 1.9.1 - Jan 14, 2018
+* New version of OpenNLP 1.9.1
+
 #### 1.8.4 - Jan 14, 2018
 * New version of OpenNLP 1.8.4
 * Latest IKVM 8.1.5717.0
