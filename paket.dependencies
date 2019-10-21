@@ -5,7 +5,7 @@ nuget FSharp.Core redirects: force
 nuget NUnit 2.6.3
 nuget NUnit.Runners 2.6.3
 nuget Nuget.CommandLine
-nuget FAKE
+nuget FAKE 4.64.17
 
 nuget IKVM
 nuget FSharp.Management
