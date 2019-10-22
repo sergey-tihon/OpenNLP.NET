@@ -145,7 +145,7 @@ Target "Clean" (fun _ ->
 type openNLPDir = root.``paket-files``.``archive.apache.org``.``apache-opennlp-1.9.1``.lib
 
 Target "Compile" (fun _ ->
-    let ikvmDir  = @"bin\lib"
+    let ikvmDir  = @"bin/lib"
     CreateDir ikvmDir
     
     [IKVMcTask(openNLPDir.``opennlp-uima-1.9.1.jar``, Version=release.AssemblyVersion,
