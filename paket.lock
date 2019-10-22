@@ -1,20 +1,20 @@
 RESTRICTION: == net45
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.64.3)
-    FSharp.Core (4.2.3) - redirects: force
+    FAKE (4.64.17)
+    FSharp.Core (4.7) - redirects: force
     FSharp.Management (0.4.5)
     FsUnit (1.3.0.1)
       NUnit (>= 2.6.3)
     IKVM (8.1.5717)
-    NuGet.CommandLine (4.4.1)
+    NuGet.CommandLine (5.3)
     NUnit (2.6.3)
     NUnit.Runners (2.6.3)
 HTTP
-  remote: http://www.frijters.net
+  remote: https://www.frijters.net
     ikvmbin-8.1.5717.0.zip (/ikvmbin-8.1.5717.0.zip)
-  remote: http://ftp.byfly.by
-    apache-opennlp-1.8.4-bin.zip (/pub/apache.org/opennlp/opennlp-1.8.4/apache-opennlp-1.8.4-bin.zip)
+  remote: https://archive.apache.org
+    apache-opennlp-1.9.1-bin.zip (/dist/opennlp/opennlp-1.9.1/apache-opennlp-1.9.1-bin.zip)
   remote: http://opennlp.sourceforge.net
     en-chunker.bin (/models-1.5/en-chunker.bin)
     en-ner-date.bin (/models-1.5/en-ner-date.bin)
