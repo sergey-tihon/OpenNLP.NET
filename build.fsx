@@ -5,6 +5,7 @@
 #r @"packages/FAKE/tools/FakeLib.dll"
 #r "System.IO.Compression.FileSystem.dll"
 #r "packages/FSharp.Management/lib/net40/FSharp.Management.dll"
+#r "packages/Mono.Cecil/lib/net40/Mono.Cecil.dll"
 
 open Microsoft.FSharp.Core.Printf
 open Fake
@@ -13,6 +14,7 @@ open Fake.ReleaseNotesHelper
 open System
 open System.IO
 open FSharp.Management
+open Mono.Cecil
 
 type root = FileSystem<  __SOURCE_DIRECTORY__  >
 
@@ -51,8 +53,6 @@ let restoreFolderFromFile folder zipFile =
 
 // Location of IKVM Compiler & ildasm / ilasm
 let ikvmc = root.``paket-files``.``www.frijters.net``.``ikvm-8.1.5717.0``.bin.``ikvmc.exe``
-let ildasm = @"c:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Bin\x64\ildasm.exe"
-let ilasm =  @"c:\Windows\Microsoft.NET\Framework64\v2.0.50727\ilasm.exe"
 
 type IKVMcTask(jar:string) =
     member val JarFile = jar
@@ -75,12 +75,6 @@ let IKVMCompile workingDirectory keyFile tasks =
         if result<> 0 then
             failwithf "Process '%s' failed with exit code '%d'" fileName result
 
-    let newKeyFile =
-        if (File.Exists keyFile) then
-            let file = workingDirectory @@ (Path.GetFileName(keyFile))
-            File.Copy(keyFile, file, true)
-            Path.GetFileName(file)
-        else keyFile
     let rec compile (task:IKVMcTask) =
         let getIKVMCommandLineArgs() =
             let sb = Text.StringBuilder()
@@ -97,12 +91,14 @@ let IKVMCompile workingDirectory keyFile tasks =
 
         File.Copy(task.JarFile, workingDirectory @@ (Path.GetFileName(task.JarFile)) ,true)
         startProcess ikvmc (getIKVMCommandLineArgs())
-        if (File.Exists(newKeyFile)) then
-            let dllFile = task.JarFile |> getNewFileName ".dll"
-            let ilFile  = task.JarFile |> getNewFileName ".il"
-            startProcess ildasm (sprintf " /all /out=%s %s" ilFile dllFile)
-            File.Delete(dllFile)
-            startProcess ilasm  (sprintf " /dll /key=%s %s" (newKeyFile) ilFile)
+
+        let key = FileInfo(keyFile).FullName
+                  |> File.ReadAllBytes
+        let dllPath = workingDirectory @@ (task.JarFile |> getNewFileName ".dll")
+        ModuleDefinition
+            .ReadModule(dllPath, ReaderParameters(InMemory=true))
+            .Write(dllPath, WriterParameters(StrongNameKeyBlob=key))
+
     tasks |> Seq.iter compile
 
 let copyPackages fromDir toDir =
@@ -118,7 +114,7 @@ let removeNotAssembliesFrom dir =
       |> Seq.iter (System.IO.File.Delete)
 
 let createNuGetPackage workingDir nuspec =
-    removeNotAssembliesFrom (workingDir+"\\lib")
+    removeNotAssembliesFrom (workingDir+"/lib")
     NuGet (fun p ->
         { p with
             Version = release.NugetVersion
@@ -130,7 +126,7 @@ let createNuGetPackage workingDir nuspec =
             ToolPath = root.packages.``NuGet.CommandLine``.tools.``NuGet.exe`` })
         nuspec
 
-let keyFile = @"nuget\OpenNLP.snk"
+let keyFile = @"./nuget/OpenNLP.snk"
 
 // --------------------------------------------------------------------------------------
 // Clean build results
@@ -154,7 +150,7 @@ Target "Compile" (fun _ ->
                 IKVMcTask(openNLPDir.``opennlp-tools-1.9.1.jar``, Version=release.AssemblyVersion)
             ])
     ]
-    |> IKVMCompile ikvmDir @".\OpenNLP.snk"
+    |> IKVMCompile ikvmDir keyFile
 )
 
 Target "NuGet" (fun _ ->

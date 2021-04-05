@@ -7,6 +7,7 @@ NUGET
     FsUnit (1.3.0.1)
       NUnit (>= 2.6.3)
     IKVM (8.1.5717)
+    Mono.Cecil (0.11.3)
     NuGet.CommandLine (5.3)
     NUnit (2.6.3)
     NUnit.Runners (2.6.3)
