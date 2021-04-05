@@ -1,50 +1,74 @@
-// --------------------------------------------------------------------------------------
-// FAKE build script
-// --------------------------------------------------------------------------------------
+#r @"paket:
+source https://nuget.org/api/v2
+framework netstandard2.0
+nuget FSharp.Core 4.7.2.0
+nuget Mono.Cecil
+nuget System.IO.Compression.ZipFile
+nuget Fake.Core.Target
+nuget Fake.Core.Process
+nuget Fake.Core.ReleaseNotes
+nuget Fake.IO.FileSystem
+nuget Fake.DotNet.Cli
+nuget Fake.DotNet.MSBuild
+nuget Fake.DotNet.AssemblyInfoFile
+nuget Fake.DotNet.Paket
+nuget Fake.Tools.Git
+nuget Fake.Api.GitHub //"
 
-#r @"packages/FAKE/tools/FakeLib.dll"
-#r "System.IO.Compression.FileSystem.dll"
-#r "packages/FSharp.Management/lib/net40/FSharp.Management.dll"
-#r "packages/Mono.Cecil/lib/net40/Mono.Cecil.dll"
+#if !FAKE
+#load "./.fake/build.fsx/intellisense.fsx"
+#r "netstandard" // Temp fix for https://github.com/fsharp/FAKE/issues/1985
+#endif
 
-open Microsoft.FSharp.Core.Printf
-open Fake
-open Fake.Git
-open Fake.ReleaseNotesHelper
 open System
 open System.IO
-open FSharp.Management
+open System.IO.Compression
+open Microsoft.FSharp.Core
 open Mono.Cecil
+open Fake
+open Fake.Core.TargetOperators
+open Fake.Core
+open Fake.IO
+open Fake.IO.FileSystemOperators
+open Fake.IO.Globbing.Operators
+open Fake.DotNet
+open Fake.Tools
 
-type root = FileSystem<  __SOURCE_DIRECTORY__  >
+Target.initEnvironment()
 
 // --------------------------------------------------------------------------------------
 // Provide project-specific details
 
-let project = "OpenNLP.NET"
-let solutionFile  = "OpenNLP.NET.sln"
-// Pattern specifying assemblies to be tested using NUnit
-let testAssemblies = "tests/**/bin/Release/*Tests*.dll"
-
-// Git configuration (used for publishing documentation in gh-pages branch)
-// The profile where the project is posted
-let gitOwner = "sergey-tihon"
-let gitHome = "https://github.com/" + gitOwner
-
-// The name of the project on GitHub
-let gitName = "OpenNLP.NET"
-// The url for the raw files hosted
-let gitRaw = environVarOrDefault "gitRaw" "https://raw.github.com/sergey-tihon"
-// --------------------------------------------------------------------------------------
+let [<Literal>]root = __SOURCE_DIRECTORY__
 
 // Read additional information from the release notes document
-let release = LoadReleaseNotes "RELEASE_NOTES.md"
+let release = ReleaseNotes.load "RELEASE_NOTES.md"
 
 // --------------------------------------------------------------------------------------
 // IKVM.NET compilation helpers
 
+let fixFileNames path =
+    use file = File.Open(path, FileMode.Open, FileAccess.ReadWrite)
+    use archive = new ZipArchive(file, ZipArchiveMode.Update)
+    archive.Entries
+    |> Seq.toList
+    |> List.filter(fun x -> x.FullName.Contains(":"))
+    |> List.iter (fun entry ->
+        printfn "%s " entry.FullName
+        let newName = entry.FullName.Replace(":","_")
+        let newEntry = archive.CreateEntry(newName)
+        begin
+            use a = entry.Open()
+            use b = newEntry.Open()
+            a.CopyTo(b)
+        end
+        entry.Delete()
+       )
+
 let unZipTo toDir file =
-    printfn "Unzipping file '%s' to '%s'" file toDir
+    Trace.trace "Renaming files inside zip archive ..."
+    fixFileNames file
+    Trace.tracefn "Unzipping file '%s' to '%s'" file toDir
     Compression.ZipFile.ExtractToDirectory(file, toDir)
 
 let restoreFolderFromFile folder zipFile =
@@ -52,53 +76,69 @@ let restoreFolderFromFile folder zipFile =
         zipFile |> unZipTo folder
 
 // Location of IKVM Compiler & ildasm / ilasm
-let ikvmc = root.``paket-files``.``www.frijters.net``.``ikvm-8.1.5717.0``.bin.``ikvmc.exe``
+let ikvmcExe = root </> "paket-files/www.frijters.net/ikvm-8.1.5717.0/bin/ikvmc.exe"
 
-type IKVMcTask(jar:string) =
-    member val JarFile = jar
-    member val Version = "" with get, set
+type IKVMcTask(jar:string, version:string) =
+    member __.JarFile = jar
+    member __.Version = version
+    member __.DllFile = Path.ChangeExtension(Path.GetFileName(jar), ".dll")
     member val Dependencies = List.empty<IKVMcTask> with get, set
+    member this.GetDllReferences() =
+        seq {
+            for t in this.Dependencies do
+                yield! t.GetDllReferences()
+            yield this.DllFile
+        }
 
 let timeOut = TimeSpan.FromSeconds(120.0)
 
 let IKVMCompile workingDirectory keyFile tasks =
-    let getNewFileName newExtension (fileName:string) =
-        Path.GetFileName(fileName).Replace(Path.GetExtension(fileName), newExtension)
-    let startProcess fileName args =
-        let result =
-            ExecProcess
-                (fun info ->
-                    info.FileName <- fileName
-                    info.WorkingDirectory <- FullName workingDirectory
-                    info.Arguments <- args)
-                timeOut
-        if result<> 0 then
-            failwithf "Process '%s' failed with exit code '%d'" fileName result
+    let ikvmc args =
+        (if Environment.isWindows
+         then CreateProcess.fromRawCommandLine ikvmcExe args
+         else CreateProcess.fromRawCommandLine "mono" (ikvmcExe + " " + args))
+        |> CreateProcess.withWorkingDirectory (DirectoryInfo(workingDirectory).FullName)
+        |> CreateProcess.withTimeout timeOut
+        |> CreateProcess.ensureExitCode
+        |> Proc.run
+        |> ignore
+    let newKeyFile =
+        if (File.Exists keyFile) then
+            let file = workingDirectory @@ (Path.GetFileName(keyFile))
+            File.Copy(keyFile, file, true)
+            Path.GetFileName(file)
+        else keyFile
 
+    let bprintf = Microsoft.FSharp.Core.Printf.bprintf
+    let cache = System.Collections.Generic.HashSet<_>()
     let rec compile (task:IKVMcTask) =
         let getIKVMCommandLineArgs() =
             let sb = Text.StringBuilder()
-            task.Dependencies |> Seq.iter
-                (fun x ->
-                    compile x
-                    x.JarFile |> getNewFileName ".dll" |> bprintf sb " -r:%s")
+            task.Dependencies
+            |> Seq.collect (fun x ->
+                compile x
+                x.GetDllReferences()
+            )
+            |> Seq.distinct
+            |> Seq.iter (bprintf sb " -r:%s")
             if not <| String.IsNullOrEmpty(task.Version)
                 then task.Version |> bprintf sb " -version:%s"
-            bprintf sb " %s -out:%s"
-                (task.JarFile |> getNewFileName ".jar")
-                (task.JarFile |> getNewFileName ".dll")
+            bprintf sb " %s -out:%s" task.JarFile task.DllFile
             sb.ToString()
 
-        File.Copy(task.JarFile, workingDirectory @@ (Path.GetFileName(task.JarFile)) ,true)
-        startProcess ikvmc (getIKVMCommandLineArgs())
-
-        let key = FileInfo(keyFile).FullName
-                  |> File.ReadAllBytes
-        let dllPath = workingDirectory @@ (task.JarFile |> getNewFileName ".dll")
-        ModuleDefinition
-            .ReadModule(dllPath, ReaderParameters(InMemory=true))
-            .Write(dllPath, WriterParameters(StrongNameKeyBlob=key))
-
+        if cache.Contains task.JarFile
+        then
+            Trace.tracefn "Task '%s' already compiled" task.JarFile
+        else
+            //File.Copy(task.JarFile, workingDirectory @@ (Path.GetFileName(task.JarFile)) ,true)
+            ikvmc <| getIKVMCommandLineArgs()
+            if (File.Exists(newKeyFile)) then
+                let key = FileInfo(newKeyFile).FullName
+                          |> File.ReadAllBytes
+                ModuleDefinition
+                    .ReadModule(task.DllFile, ReaderParameters(InMemory=true))
+                    .Write(task.DllFile, WriterParameters(StrongNameKeyBlob=key))
+            cache.Add(task.JarFile) |> ignore
     tasks |> Seq.iter compile
 
 let copyPackages fromDir toDir =
@@ -113,82 +153,80 @@ let removeNotAssembliesFrom dir =
       -- (dir + @"/*.dll")
       |> Seq.iter (System.IO.File.Delete)
 
-let createNuGetPackage workingDir nuspec =
-    removeNotAssembliesFrom (workingDir+"/lib")
-    NuGet (fun p ->
+let createNuGetPackage template =
+    Paket.pack(fun p ->
         { p with
-            Version = release.NugetVersion
-            ReleaseNotes = String.Join(Environment.NewLine, release.Notes)
+            ToolType = Fake.DotNet.ToolType.CreateLocalTool()
+            TemplateFile = template
             OutputPath = "bin"
-            AccessKey = getBuildParamOrDefault "nugetkey" ""
-            Publish = hasBuildParam "nugetkey"
-            WorkingDir = workingDir
-            ToolPath = root.packages.``NuGet.CommandLine``.tools.``NuGet.exe`` })
-        nuspec
+            Version = release.NugetVersion
+            ReleaseNotes = String.toLines release.Notes})
 
 let keyFile = @"./nuget/OpenNLP.snk"
 
 // --------------------------------------------------------------------------------------
 // Clean build results
 
-Target "Clean" (fun _ ->
-    CleanDirs ["bin"; "temp"]
+Target.create "Clean" (fun _ ->
+     Shell.cleanDirs ["bin"; "temp"]
 )
 
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-type openNLPDir = root.``paket-files``.``archive.apache.org``.``apache-opennlp-1.9.1``.lib
+let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.1/lib"
 
-Target "Compile" (fun _ ->
+Target.create "Compile" (fun _ ->
     let ikvmDir  = @"bin/lib"
-    CreateDir ikvmDir
+    Shell.mkdir ikvmDir
     
-    [IKVMcTask(openNLPDir.``opennlp-uima-1.9.1.jar``, Version=release.AssemblyVersion,
+    [IKVMcTask(openNLPDir </> "opennlp-uima-1.9.1.jar", version=release.AssemblyVersion,
            Dependencies = 
             [
-                IKVMcTask(openNLPDir.``opennlp-tools-1.9.1.jar``, Version=release.AssemblyVersion)
+                IKVMcTask(openNLPDir </> "opennlp-tools-1.9.1.jar", version=release.AssemblyVersion)
             ])
     ]
     |> IKVMCompile ikvmDir keyFile
 )
 
-Target "NuGet" (fun _ ->
-    createNuGetPackage "bin/" root.nuget.``OpenNLP.nuspec``
+Target.create "NuGet" (fun _ ->
+    root </> "nuget/OpenNLP.template"
+    |> createNuGetPackage
 )
 
 // --------------------------------------------------------------------------------------
 // Build and run test projects
+ 
+Target.create "BuildTests" (fun _ ->
+    let result = DotNet.exec id "build" "OpenNLP.NET.sln -c Release"
+    if not result.OK
+    then failwithf "Build failed: %A" result.Errors
+)
 
-Target "BuildTests" (fun _ ->
-    !! solutionFile
-    |> MSBuildRelease "" "Rebuild"
+Target.create "RunTests" (fun _ ->
+    let libs = !! "tests/**/bin/Release/net45/*.Tests.dll"
+    let args = String.Join(" ", libs)
+    let runner = "packages/NUnit.ConsoleRunner/tools/nunit3-console.exe"
+
+    (if Environment.isWindows
+     then CreateProcess.fromRawCommandLine runner args
+     else CreateProcess.fromRawCommandLine "mono" (runner + " " + args))
+    |> CreateProcess.ensureExitCode
+    |> Proc.run
     |> ignore
 )
-
-Target "RunTests" (fun _ ->
-    !! testAssemblies
-    |> NUnit (fun p ->
-        { p with
-            DisableShadowCopy = true
-            TimeOut = TimeSpan.FromMinutes 60.
-            OutputFile = "TestResults.xml" })
-)
-
-Target "Release" DoNothing
 
 // --------------------------------------------------------------------------------------
 // Run all targets by default. Invoke 'build <Target>' to override
 
-Target "All" DoNothing
+Target.create "All" ignore
+Target.create "Release" ignore
 
 "Clean"
   ==> "Compile"
   ==> "NuGet"
-
-"NuGet"
   ==> "BuildTests"
   ==> "RunTests"
   ==> "All"
 
-RunTargetOrDefault "All"
+Target.runOrDefault "All"

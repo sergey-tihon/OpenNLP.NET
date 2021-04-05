@@ -6,6 +6,9 @@
 *.user
 *.sln.docstates
 
+# Xamarin Studio / monodevelop user-specific
+*.userprefs
+
 # Build results
 
 [Dd]ebug/
@@ -21,8 +24,6 @@ build/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
-
-.vs/
 
 *_i.c
 *_p.c
@@ -168,17 +169,9 @@ docs/output/
 
 # Temp folder used for publishing docs
 temp/
-.fake/
 
 # Test results produced by build
 TestResults.xml
-
-# Nuget outputs
-nuget/*.nupkg
-
-# ===================================================
-# Project specific directories and files
-# ===================================================
 
 # Nuget outputs
 nuget/*.nupkg
@@ -189,9 +182,12 @@ paket-files
 *.orig
 docs/content/license.md
 docs/content/release-notes.md
+.fake/
+.vs/
+.vscode/
+.ionide/
 
-# Paket
-.paket/paket.exe
-
-# Secret key
-src/Stanford.NLP.snk
+nuget/Stanford.NLP.snk
+.paket/
+data/.paket/
+TestResult.xml
