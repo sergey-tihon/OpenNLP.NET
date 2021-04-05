@@ -174,16 +174,16 @@ Target.create "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.1/lib"
+let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.3/lib"
 
 Target.create "Compile" (fun _ ->
     let ikvmDir  = @"bin/lib"
     Shell.mkdir ikvmDir
     
-    [IKVMcTask(openNLPDir </> "opennlp-uima-1.9.1.jar", version=release.AssemblyVersion,
+    [IKVMcTask(openNLPDir </> "opennlp-uima-1.9.3.jar", version=release.AssemblyVersion,
            Dependencies = 
             [
-                IKVMcTask(openNLPDir </> "opennlp-tools-1.9.1.jar", version=release.AssemblyVersion)
+                IKVMcTask(openNLPDir </> "opennlp-tools-1.9.3.jar", version=release.AssemblyVersion)
             ])
     ]
     |> IKVMCompile ikvmDir keyFile

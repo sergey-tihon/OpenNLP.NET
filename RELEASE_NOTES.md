@@ -1,3 +1,6 @@
+#### 1.9.3 - April 6, 2021
+* New version of OpenNLP 1.9.3
+
 #### 1.9.1.1 - April 5, 2021
 * Sign assemblies
 
