@@ -1,16 +1,10 @@
 source https://nuget.org/api/v2
 framework: net45
 
-nuget FSharp.Core redirects: force
-nuget NUnit 2.6.3
-nuget NUnit.Runners 2.6.3
-nuget Nuget.CommandLine
-nuget FAKE 4.64.17
-
 nuget IKVM
-nuget Mono.Cecil
-nuget FSharp.Management
-nuget FsUnit 1.3.0.1
+nuget Microsoft.NETFramework.ReferenceAssemblies
+nuget NUnit
+nuget NUnit.ConsoleRunner
 
 http https://www.frijters.net/ikvmbin-8.1.5717.0.zip
 http https://archive.apache.org/dist/opennlp/opennlp-1.9.1/apache-opennlp-1.9.1-bin.zip

@@ -1,13 +1,13 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/0wh9dw80mm55v7pg?svg=true)](https://ci.appveyor.com/project/sergey-tihon/opennlp-net)
+[![Build Status](https://github.com/sergey-tihon/OpenNLP.NET/workflows/Build%20and%20Test/badge.svg?branch=master)](https://github.com/sergey-tihon/OpenNLP.NET/actions?query=branch%3Amaster)
 
-OpenNLP for .NET [![NuGet Status](http://img.shields.io/nuget/v/OpenNLP.NET.svg?style=flat)](https://www.nuget.org/packages/OpenNLP.NET/)
+OpenNLP for .NET [![NuGet Badge](https://buildstats.info/nuget/OpenNLP.NET.svg)](https://www.nuget.org/packages/OpenNLP.NET/)
 =====================
 
 `OpenNLP for .NET` is a port of OpenNLP to .NET.
 
 This project contains build scripts that recompile OpenNLP `.jar` packages to .NET assemblies using [IKVM.NET](http://www.ikvm.net/) and tests that help to be sure that recompiled packages are workable. Recompiled assemblies are available on [NuGet](https://www.nuget.org/packages/OpenNLP.NET/).
 
-.NET samples are available [in tests](https://github.com/sergey-tihon/OpenNLP.NET/blob/master/tests/OpenNLP.NET.Tests/Tests.fs). [Manual](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html) is available on official site.
+.NET samples are available [in tests](https://github.com/sergey-tihon/OpenNLP.NET/blob/master/tests/OpenNLP.NET.Tests/Tests.cs). [Manual](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html) is available on official site.
 
 Versioning
 ----------
