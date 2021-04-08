@@ -4,6 +4,7 @@ framework netstandard2.0
 nuget FSharp.Core 4.7.2.0
 nuget Mono.Cecil
 nuget System.IO.Compression.ZipFile
+nuget Graphviz.DotLanguage
 nuget Fake.Core.Target
 nuget Fake.Core.Process
 nuget Fake.Core.ReleaseNotes
@@ -23,6 +24,8 @@ nuget Fake.Api.GitHub //"
 open System
 open System.IO
 open System.IO.Compression
+open System.Collections.Generic
+open System.Text.RegularExpressions
 open Microsoft.FSharp.Core
 open Mono.Cecil
 open Fake
@@ -33,6 +36,7 @@ open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.DotNet
 open Fake.Tools
+open DotLang.CodeAnalysis.Syntax
 
 Target.initEnvironment()
 
@@ -110,7 +114,7 @@ let IKVMCompile workingDirectory keyFile tasks =
         else keyFile
 
     let bprintf = Microsoft.FSharp.Core.Printf.bprintf
-    let cache = System.Collections.Generic.HashSet<_>()
+    let cache = HashSet<_>()
     let rec compile (task:IKVMcTask) =
         let getIKVMCommandLineArgs() =
             let sb = Text.StringBuilder()
@@ -177,16 +181,76 @@ Target.create "Clean" (fun _ ->
 let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.3/lib"
 
 Target.create "Compile" (fun _ ->
+
+    // Get *.jar file for compilation
+    let jars =
+        Directory.GetFiles(openNLPDir, "*.jar")
+        |> Array.map (Path.GetFileName)
+        |> Set.ofArray
+    if (jars.IsEmpty)
+    then failwith "Found 0 *.jar files"
+
+    // Infer dependencies between *.jar files
+    "-filter:package -dotoutput dot " + String.Join(" ", jars)
+    |> CreateProcess.fromRawCommandLine "jdeps" 
+    |> CreateProcess.withWorkingDirectory openNLPDir
+    |> CreateProcess.ensureExitCode
+    |> Proc.run
+    |> ignore
+
+    // Load dependency graph
+    let parser = 
+        openNLPDir </> "dot/summary.dot"
+        |> File.ReadAllText
+        |> Parser
+
+    // Filter out dependencies on not available *.jars
+    let deps =
+        parser.Parse().Graphs.[0].Statements
+        |> Seq.cast<EdgeStatementSyntax>
+        |> Seq.map (fun x-> 
+            (x.Left :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue, 
+            (x.Right :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue)
+        |> Seq.filter (fun (x,y) -> jars.Contains x && jars.Contains y)
+        |> Seq.groupBy fst
+        |> Seq.map (fun (x,xs)-> x, xs |> Seq.map snd |> Seq.toList)
+        |> Map.ofSeq
+
+    // Build IKVm task with proper dependencies order (topological sort)
+    let openNlpTools = 
+        let cache = Dictionary<_,_>()
+
+        let pattern = Regex("-(?<version>[0-9.]*).jar$", RegexOptions.Compiled)
+        let getVersion str =
+            let m = pattern.Match(str)
+            if m.Success 
+            then m.Groups.["version"].Value |> Some
+            else None
+
+        let rec getTask name =
+            match cache.TryGetValue name with
+            | true, task -> task
+            | _ -> 
+                let deps = 
+                    Map.tryFind name deps
+                    |> Option.defaultValue []
+                    |> List.map getTask
+                let ver = getVersion name 
+                          |> Option.defaultValue release.AssemblyVersion
+                let task = IKVMcTask(openNLPDir </> name, ver, Dependencies = deps)
+                cache.Add(name, task)
+                task
+
+        seq {
+            for jar in jars do
+                if not <| cache.ContainsKey jar
+                then yield getTask jar
+        } |> Seq.toList
+
     let ikvmDir  = @"bin/lib"
     Shell.mkdir ikvmDir
-    
-    [IKVMcTask(openNLPDir </> "opennlp-uima-1.9.3.jar", version=release.AssemblyVersion,
-           Dependencies = 
-            [
-                IKVMcTask(openNLPDir </> "opennlp-tools-1.9.3.jar", version=release.AssemblyVersion)
-            ])
-    ]
-    |> IKVMCompile ikvmDir keyFile
+
+    IKVMCompile ikvmDir keyFile openNlpTools
 )
 
 Target.create "NuGet" (fun _ ->
@@ -196,7 +260,7 @@ Target.create "NuGet" (fun _ ->
 
 // --------------------------------------------------------------------------------------
 // Build and run test projects
- 
+
 Target.create "BuildTests" (fun _ ->
     let result = DotNet.exec id "build" "OpenNLP.NET.sln -c Release"
     if not result.OK
