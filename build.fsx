@@ -190,22 +190,23 @@ Target.create "Compile" (fun _ ->
     if (jars.IsEmpty)
     then failwith "Found 0 *.jar files"
 
-    // Infer dependencies between *.jar files
-    "-filter:package -dotoutput dot " + String.Join(" ", jars)
-    |> CreateProcess.fromRawCommandLine "jdeps" 
-    |> CreateProcess.withWorkingDirectory openNLPDir
-    |> CreateProcess.ensureExitCode
-    |> Proc.run
-    |> ignore
+    let dotFile = "nuget/OpenNLP.dot"
+    if not <| File.Exists dotFile then
+        // Infer dependencies between *.jar files
+        "-filter:package -dotoutput dot " + String.Join(" ", jars)
+        |> CreateProcess.fromRawCommandLine "jdeps" 
+        |> CreateProcess.withWorkingDirectory openNLPDir
+        |> CreateProcess.ensureExitCode
+        |> Proc.run
+        |> ignore
 
-    // Load dependency graph
-    let parser = 
         openNLPDir </> "dot/summary.dot"
-        |> File.ReadAllText
-        |> Parser
+        |> Shell.copyFile dotFile
 
     // Filter out dependencies on not available *.jars
     let deps =
+        let parser = dotFile |> File.ReadAllText |> Parser
+
         parser.Parse().Graphs.[0].Statements
         |> Seq.cast<EdgeStatementSyntax>
         |> Seq.map (fun x-> 
