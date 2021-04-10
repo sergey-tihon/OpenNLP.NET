@@ -145,6 +145,63 @@ let IKVMCompile workingDirectory keyFile tasks =
             cache.Add(task.JarFile) |> ignore
     tasks |> Seq.iter compile
 
+/// Infer dependencies between *.jar files
+let buildJDepsGraph dotFile jarFolder (jars:string seq)=
+    "-filter:package -dotoutput dot " + String.Join(" ", jars)
+    |> CreateProcess.fromRawCommandLine "jdeps" 
+    |> CreateProcess.withWorkingDirectory jarFolder
+    |> CreateProcess.ensureExitCode
+    |> Proc.run
+    |> ignore
+
+    jarFolder </> "dot/summary.dot"
+    |> Shell.copyFile dotFile
+
+let loadJDepsGraph dotFile (jars:Set<string>) = 
+    let parser = dotFile |> File.ReadAllText |> Parser
+
+    parser.Parse().Graphs.[0].Statements
+    |> Seq.cast<EdgeStatementSyntax>
+    |> Seq.map (fun x-> 
+        (x.Left :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue, 
+        (x.Right :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue)
+    |> Seq.filter (fun (x,y) -> jars.Contains x && jars.Contains y)
+    |> Seq.groupBy fst
+    |> Seq.map (fun (x,xs)-> x, xs |> Seq.map snd |> Seq.toList)
+    |> Map.ofSeq
+
+/// Build IKVm task with proper dependencies order (topological sort)
+let createCompilationGraph dotFile jarFolder (jars:Set<string>) =
+    let deps = loadJDepsGraph dotFile jars
+    let cache = Dictionary<_,_>()
+
+    let pattern = Regex("-(?<version>[0-9.]*).jar$", RegexOptions.Compiled)
+    let getVersion str =
+        let m = pattern.Match(str)
+        if m.Success 
+        then m.Groups.["version"].Value |> Some
+        else None
+
+    let rec getTask name =
+        match cache.TryGetValue name with
+        | true, task -> task
+        | _ -> 
+            let deps = 
+                Map.tryFind name deps
+                |> Option.defaultValue []
+                |> List.map getTask
+            let ver = getVersion name 
+                      |> Option.defaultValue release.AssemblyVersion
+            let task = IKVMcTask(jarFolder </> name, ver, Dependencies = deps)
+            cache.Add(name, task)
+            task
+
+    seq {
+        for jar in jars do
+            if not <| cache.ContainsKey jar
+            then yield getTask jar
+    } |> Seq.toList
+
 let copyPackages fromDir toDir =
     if (not <| Directory.Exists(toDir))
         then Directory.CreateDirectory(toDir) |> ignore
@@ -181,7 +238,6 @@ Target.create "Clean" (fun _ ->
 let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.3/lib"
 
 Target.create "Compile" (fun _ ->
-
     // Get *.jar file for compilation
     let jars =
         Directory.GetFiles(openNLPDir, "*.jar")
@@ -190,68 +246,15 @@ Target.create "Compile" (fun _ ->
     if (jars.IsEmpty)
     then failwith "Found 0 *.jar files"
 
-    let dotFile = "nuget/OpenNLP.dot"
-    if not <| File.Exists dotFile then
-        // Infer dependencies between *.jar files
-        "-filter:package -dotoutput dot " + String.Join(" ", jars)
-        |> CreateProcess.fromRawCommandLine "jdeps" 
-        |> CreateProcess.withWorkingDirectory openNLPDir
-        |> CreateProcess.ensureExitCode
-        |> Proc.run
-        |> ignore
-
-        openNLPDir </> "dot/summary.dot"
-        |> Shell.copyFile dotFile
-
-    // Filter out dependencies on not available *.jars
-    let deps =
-        let parser = dotFile |> File.ReadAllText |> Parser
-
-        parser.Parse().Graphs.[0].Statements
-        |> Seq.cast<EdgeStatementSyntax>
-        |> Seq.map (fun x-> 
-            (x.Left :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue, 
-            (x.Right :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue)
-        |> Seq.filter (fun (x,y) -> jars.Contains x && jars.Contains y)
-        |> Seq.groupBy fst
-        |> Seq.map (fun (x,xs)-> x, xs |> Seq.map snd |> Seq.toList)
-        |> Map.ofSeq
-
-    // Build IKVm task with proper dependencies order (topological sort)
-    let openNlpTools = 
-        let cache = Dictionary<_,_>()
-
-        let pattern = Regex("-(?<version>[0-9.]*).jar$", RegexOptions.Compiled)
-        let getVersion str =
-            let m = pattern.Match(str)
-            if m.Success 
-            then m.Groups.["version"].Value |> Some
-            else None
-
-        let rec getTask name =
-            match cache.TryGetValue name with
-            | true, task -> task
-            | _ -> 
-                let deps = 
-                    Map.tryFind name deps
-                    |> Option.defaultValue []
-                    |> List.map getTask
-                let ver = getVersion name 
-                          |> Option.defaultValue release.AssemblyVersion
-                let task = IKVMcTask(openNLPDir </> name, ver, Dependencies = deps)
-                cache.Add(name, task)
-                task
-
-        seq {
-            for jar in jars do
-                if not <| cache.ContainsKey jar
-                then yield getTask jar
-        } |> Seq.toList
-
     let ikvmDir  = @"bin/lib"
     Shell.mkdir ikvmDir
 
-    IKVMCompile ikvmDir keyFile openNlpTools
+    let dotFile = "nuget/OpenNLP.dot"
+    if not <| File.Exists dotFile then
+        buildJDepsGraph dotFile openNLPDir jars
+
+    createCompilationGraph dotFile openNLPDir jars
+    |> IKVMCompile ikvmDir keyFile
 )
 
 Target.create "NuGet" (fun _ ->
