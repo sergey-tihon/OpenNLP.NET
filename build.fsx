@@ -4,6 +4,7 @@ framework netstandard2.0
 nuget FSharp.Core 4.7.2.0
 nuget Mono.Cecil
 nuget System.IO.Compression.ZipFile
+nuget Graphviz.DotLanguage
 nuget Fake.Core.Target
 nuget Fake.Core.Process
 nuget Fake.Core.ReleaseNotes
@@ -23,6 +24,8 @@ nuget Fake.Api.GitHub //"
 open System
 open System.IO
 open System.IO.Compression
+open System.Collections.Generic
+open System.Text.RegularExpressions
 open Microsoft.FSharp.Core
 open Mono.Cecil
 open Fake
@@ -33,6 +36,7 @@ open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.DotNet
 open Fake.Tools
+open DotLang.CodeAnalysis.Syntax
 
 Target.initEnvironment()
 
@@ -110,7 +114,7 @@ let IKVMCompile workingDirectory keyFile tasks =
         else keyFile
 
     let bprintf = Microsoft.FSharp.Core.Printf.bprintf
-    let cache = System.Collections.Generic.HashSet<_>()
+    let cache = HashSet<_>()
     let rec compile (task:IKVMcTask) =
         let getIKVMCommandLineArgs() =
             let sb = Text.StringBuilder()
@@ -140,6 +144,63 @@ let IKVMCompile workingDirectory keyFile tasks =
                     .Write(task.DllFile, WriterParameters(StrongNameKeyBlob=key))
             cache.Add(task.JarFile) |> ignore
     tasks |> Seq.iter compile
+
+/// Infer dependencies between *.jar files
+let buildJDepsGraph dotFile jarFolder (jars:string seq)=
+    "-filter:package -dotoutput dot " + String.Join(" ", jars)
+    |> CreateProcess.fromRawCommandLine "jdeps" 
+    |> CreateProcess.withWorkingDirectory jarFolder
+    |> CreateProcess.ensureExitCode
+    |> Proc.run
+    |> ignore
+
+    jarFolder </> "dot/summary.dot"
+    |> Shell.copyFile dotFile
+
+let loadJDepsGraph dotFile (jars:Set<string>) = 
+    let parser = dotFile |> File.ReadAllText |> Parser
+
+    parser.Parse().Graphs.[0].Statements
+    |> Seq.cast<EdgeStatementSyntax>
+    |> Seq.map (fun x-> 
+        (x.Left :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue, 
+        (x.Right :?> NodeStatementSyntax).Identifier.IdentifierToken.StringValue)
+    |> Seq.filter (fun (x,y) -> jars.Contains x && jars.Contains y)
+    |> Seq.groupBy fst
+    |> Seq.map (fun (x,xs)-> x, xs |> Seq.map snd |> Seq.toList)
+    |> Map.ofSeq
+
+/// Build IKVm task with proper dependencies order (topological sort)
+let createCompilationGraph dotFile jarFolder (jars:Set<string>) =
+    let deps = loadJDepsGraph dotFile jars
+    let cache = Dictionary<_,_>()
+
+    let pattern = Regex("-(?<version>[0-9.]*).jar$", RegexOptions.Compiled)
+    let getVersion str =
+        let m = pattern.Match(str)
+        if m.Success 
+        then m.Groups.["version"].Value |> Some
+        else None
+
+    let rec getTask name =
+        match cache.TryGetValue name with
+        | true, task -> task
+        | _ -> 
+            let deps = 
+                Map.tryFind name deps
+                |> Option.defaultValue []
+                |> List.map getTask
+            let ver = getVersion name 
+                      |> Option.defaultValue release.AssemblyVersion
+            let task = IKVMcTask(jarFolder </> name, ver, Dependencies = deps)
+            cache.Add(name, task)
+            task
+
+    seq {
+        for jar in jars do
+            if not <| cache.ContainsKey jar
+            then yield getTask jar
+    } |> Seq.toList
 
 let copyPackages fromDir toDir =
     if (not <| Directory.Exists(toDir))
@@ -174,18 +235,25 @@ Target.create "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.1/lib"
+let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.3/lib"
 
 Target.create "Compile" (fun _ ->
+    // Get *.jar file for compilation
+    let jars =
+        Directory.GetFiles(openNLPDir, "*.jar")
+        |> Array.map (Path.GetFileName)
+        |> Set.ofArray
+    if (jars.IsEmpty)
+    then failwith "Found 0 *.jar files"
+
     let ikvmDir  = @"bin/lib"
     Shell.mkdir ikvmDir
-    
-    [IKVMcTask(openNLPDir </> "opennlp-uima-1.9.1.jar", version=release.AssemblyVersion,
-           Dependencies = 
-            [
-                IKVMcTask(openNLPDir </> "opennlp-tools-1.9.1.jar", version=release.AssemblyVersion)
-            ])
-    ]
+
+    let dotFile = "nuget/OpenNLP.dot"
+    if not <| File.Exists dotFile then
+        buildJDepsGraph dotFile openNLPDir jars
+
+    createCompilationGraph dotFile openNLPDir jars
     |> IKVMCompile ikvmDir keyFile
 )
 
@@ -196,7 +264,7 @@ Target.create "NuGet" (fun _ ->
 
 // --------------------------------------------------------------------------------------
 // Build and run test projects
- 
+
 Target.create "BuildTests" (fun _ ->
     let result = DotNet.exec id "build" "OpenNLP.NET.sln -c Release"
     if not result.OK

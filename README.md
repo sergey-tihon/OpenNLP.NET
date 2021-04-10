@@ -1,6 +1,6 @@
 [![Build Status](https://github.com/sergey-tihon/OpenNLP.NET/workflows/Build%20and%20Test/badge.svg?branch=master)](https://github.com/sergey-tihon/OpenNLP.NET/actions?query=branch%3Amaster)
 
-OpenNLP for .NET [![NuGet Badge](https://buildstats.info/nuget/OpenNLP.NET.svg)](https://www.nuget.org/packages/OpenNLP.NET/)
+OpenNLP for .NET [![NuGet Badge](https://buildstats.info/nuget/OpenNLP.NET)](https://www.nuget.org/packages/OpenNLP.NET/)
 =====================
 
 `OpenNLP for .NET` is a port of OpenNLP to .NET.
