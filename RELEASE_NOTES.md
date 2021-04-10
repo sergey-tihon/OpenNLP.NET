@@ -1,5 +1,7 @@
-#### 1.9.3 - April 6, 2021
+#### 1.9.3 - April 11, 2021
 * New version of OpenNLP 1.9.3
+* 32 dlls compiled instead of 2
+* New jar dependency detection using jdep
 
 #### 1.9.1.1 - April 5, 2021
 * Sign assemblies
