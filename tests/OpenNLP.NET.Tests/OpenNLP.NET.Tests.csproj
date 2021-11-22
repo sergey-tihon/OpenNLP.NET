@@ -9,11 +9,11 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="opennlp-tools-1.9.3">
-      <HintPath>..\..\bin\lib\opennlp-tools-1.9.3.dll</HintPath>
+    <Reference Include="opennlp-tools-1.9.4">
+      <HintPath>..\..\bin\lib\opennlp-tools-1.9.4.dll</HintPath>
     </Reference>
-    <Reference Include="opennlp-uima-1.9.3">
-      <HintPath>..\..\bin\lib\opennlp-uima-1.9.3.dll</HintPath>
+    <Reference Include="opennlp-uima-1.9.4">
+      <HintPath>..\..\bin\lib\opennlp-uima-1.9.4.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
