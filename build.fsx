@@ -1,7 +1,7 @@
 #r @"paket:
 source https://nuget.org/api/v2
 framework netstandard2.0
-nuget FSharp.Core 4.7.2.0
+nuget FSharp.Core 5.0.0
 nuget Mono.Cecil
 nuget System.IO.Compression.ZipFile
 nuget Graphviz.DotLanguage
@@ -80,7 +80,7 @@ let restoreFolderFromFile folder zipFile =
         zipFile |> unZipTo folder
 
 // Location of IKVM Compiler & ildasm / ilasm
-let ikvmcExe = root </> "paket-files/www.frijters.net/ikvm-8.1.5717.0/bin/ikvmc.exe"
+let ikvmcExe = root </> "paket-files/sergeytihon.files.wordpress.com/ikvm-8.1.5717.0/bin/ikvmc.exe"
 
 type IKVMcTask(jar:string, version:string) =
     member __.JarFile = jar
