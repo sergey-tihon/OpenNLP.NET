@@ -246,7 +246,7 @@ Target.create "Compile" (fun _ ->
     if (jars.IsEmpty)
     then failwith "Found 0 *.jar files"
 
-    let ikvmDir  = @"bin/lib"
+    let ikvmDir  = @"bin/lib/net461"
     Shell.mkdir ikvmDir
 
     let dotFile = "nuget/OpenNLP.dot"
@@ -272,7 +272,7 @@ Target.create "BuildTests" (fun _ ->
 )
 
 Target.create "RunTests" (fun _ ->
-    let libs = !! "tests/**/bin/Release/net45/*.Tests.dll"
+    let libs = !! "tests/**/bin/Release/net461/*.Tests.dll"
     let args = String.Join(" ", libs)
     let runner = "packages/NUnit.ConsoleRunner/tools/nunit3-console.exe"
 

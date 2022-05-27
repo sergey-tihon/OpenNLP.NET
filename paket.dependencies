@@ -1,5 +1,5 @@
 source https://nuget.org/api/v2
-framework: net45
+framework: net461
 
 nuget IKVM
 nuget Microsoft.NETFramework.ReferenceAssemblies
