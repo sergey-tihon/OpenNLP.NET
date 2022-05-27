@@ -1,3 +1,10 @@
+#### 1.9.1.2-preview0001 - June 2, 2022
+* Allow build with any .NET SDK 6.x
+* Latest IKVM preview 8.2.0-prerelease0392
+* Support for .NET Core 3.1 and higher
+* Dropped .NET Framework support prior to 4.6.1
+* Tests for .NET Core 3.1
+
 #### 1.9.4 - Nov 22, 2021
 * New version of OpenNLP 1.9.4
 * Build with .NET 6.0
