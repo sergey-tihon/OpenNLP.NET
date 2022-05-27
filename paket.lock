@@ -10,8 +10,8 @@ NUGET
 HTTP
   remote: https://sergeytihon.files.wordpress.com
     ikvmbin-8.1.5717.0.zip (/2021/11/ikvmbin-8.1.5717.0.zip)
-  remote: https://dlcdn.apache.org
-    apache-opennlp-1.9.4-bin.zip (/opennlp/opennlp-1.9.4/apache-opennlp-1.9.4-bin.zip)
+  remote: https://archive.apache.org
+    apache-opennlp-1.9.1-bin.zip (/dist/opennlp/opennlp-1.9.1/apache-opennlp-1.9.1-bin.zip)
   remote: http://opennlp.sourceforge.net
     en-chunker.bin (/models-1.5/en-chunker.bin)
     en-ner-date.bin (/models-1.5/en-ner-date.bin)

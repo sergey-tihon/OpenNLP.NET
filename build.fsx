@@ -235,7 +235,7 @@ Target.create "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-let openNLPDir = root </> "paket-files/dlcdn.apache.org/apache-opennlp-1.9.4/lib"
+let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.1/lib"
 
 Target.create "Compile" (fun _ ->
     // Get *.jar file for compilation
