@@ -1,12 +1,17 @@
 source https://nuget.org/api/v2
-framework: net461
+source https://api.nuget.org/v3/index.json
 
-nuget IKVM
-nuget Microsoft.NETFramework.ReferenceAssemblies
+nuget IKVM 8.2.0-prerelease0392
 nuget NUnit
+nuget NUnit3TestAdapter
 nuget NUnit.ConsoleRunner
+nuget Microsoft.NET.Test.Sdk
+nuget Microsoft.NETFramework.ReferenceAssemblies
 
-http https://sergeytihon.files.wordpress.com/2021/11/ikvmbin-8.1.5717.0.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.0-prerelease.392/IKVM-8.2.0-prerelease.392-tools-net461-any.zip ikvm-8.2.0-prerelease.392-tools-net461-win7-x64/tools.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.0-prerelease.392/IKVM-8.2.0-prerelease.392-tools-netcoreapp3.1-win7-x64.zip ikvm-8.2.0-prerelease.392-tools-netcoreapp3.1-linux-x64/tools.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.0-prerelease.392/IKVM-8.2.0-prerelease.392-tools-netcoreapp3.1-linux-x64.zip ikvm-8.2.0-prerelease.392-tools-netcoreapp3.1-win7-x64/tools.zip
+
 http https://archive.apache.org/dist/opennlp/opennlp-1.9.1/apache-opennlp-1.9.1-bin.zip
 
 http http://opennlp.sourceforge.net/models-1.5/en-token.bin

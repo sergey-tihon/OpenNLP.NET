@@ -21,4 +21,4 @@ description
 files
     ../bin/lib/**/*.dll ==> lib
 dependencies
-    IKVM 8.1.5717
+    IKVM 8.2.0-prerelease0392
