@@ -15,15 +15,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macOS-latest]
-        dotnet: [6.0.100]
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v1
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+    - name: Setup .NET 3.1 SDK
+      uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: ${{ matrix.dotnet }}
+        dotnet-version: 3.1.x
+    - name: Setup .NET 6.0 SDK
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x 
     - name: Install local tools
       run: dotnet tool restore
     - name: Paket Restore
