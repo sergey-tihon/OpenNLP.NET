@@ -262,7 +262,7 @@ let keyFile = @"./nuget/OpenNLP.snk"
 // Clean build results
 
 Target.create "Clean" (fun _ ->
-     Shell.cleanDirs ["bin"; "temp"]
+     Shell.cleanDirs ["bin"; "temp"; "TestResults"]
 )
 
 // --------------------------------------------------------------------------------------
@@ -313,26 +313,22 @@ Target.create "BuildTests" (fun _ ->
 )
 
 Target.create "RunTests" (fun _ ->
-    Trace.trace $"Running tests for netcoreapp3.1"
 
     let doubleQuote = '"'
+
+    Trace.trace $"Running tests for netcoreapp3.1"
     let libs = !! "tests/**/bin/Release/netcoreapp3.1/*.Tests.dll"
     for lib in libs do
-        DotNet.exec id "test" $"{lib} -c Release --no-build --logger:{doubleQuote}console;verbosity=normal{doubleQuote} --logger:{doubleQuote}trx;LogFileName=TestResults.trx{doubleQuote}"
-        |> ignore
+        let result = DotNet.exec id "test" $"{lib} -c Release --no-build --logger:{doubleQuote}console;verbosity=normal{doubleQuote} --logger:{doubleQuote}trx;LogFileName={doubleQuote}netcoreapp3.1-{Path.GetFileNameWithoutExtension(lib)}-TestResults.trx{doubleQuote}"
+        if not result.OK
+        then failwithf "Tests failed: %A" result.Errors
 
     Trace.trace $"Running tests for net461"
-
     let libs = !! "tests/**/bin/Release/net461/*.Tests.dll"
-    let args = String.Join(" ", libs)
-    let runner = "packages/NUnit.ConsoleRunner/tools/nunit3-console.exe"
-
-    (if Environment.isWindows
-     then CreateProcess.fromRawCommandLine runner args
-     else CreateProcess.fromRawCommandLine "mono" (runner + " " + args))
-    |> CreateProcess.ensureExitCode
-    |> Proc.run
-    |> ignore
+    for lib in libs do
+        let result = DotNet.exec id "test" $"{lib} -c Release --no-build --logger:{doubleQuote}console;verbosity=normal{doubleQuote} --logger:{doubleQuote}trx;LogFileName={doubleQuote}net461-{Path.GetFileNameWithoutExtension(lib)}-TestResults.trx{doubleQuote}"
+        if not result.OK
+        then failwithf "Tests failed: %A" result.Errors
 )
 
 // --------------------------------------------------------------------------------------

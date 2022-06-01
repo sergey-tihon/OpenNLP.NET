@@ -4,7 +4,6 @@ source https://api.nuget.org/v3/index.json
 nuget IKVM 8.2.0-prerelease0392
 nuget NUnit
 nuget NUnit3TestAdapter
-nuget NUnit.ConsoleRunner
 nuget Microsoft.NET.Test.Sdk
 nuget Microsoft.NETFramework.ReferenceAssemblies
 
