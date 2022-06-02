@@ -1,7 +1,7 @@
 #r @"paket:
-source https://nuget.org/api/v2
-framework netstandard2.0
-nuget FSharp.Core 5.0.0
+source https://api.nuget.org/v3/index.json
+framework: net6.0
+nuget FSharp.Core
 nuget Mono.Cecil
 nuget System.IO.Compression.ZipFile
 nuget Graphviz.DotLanguage
@@ -18,7 +18,6 @@ nuget Fake.Api.GitHub //"
 
 #if !FAKE
 #load "./.fake/build.fsx/intellisense.fsx"
-#r "netstandard" // Temp fix for https://github.com/fsharp/FAKE/issues/1985
 #endif
 
 open System
