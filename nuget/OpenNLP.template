@@ -13,7 +13,7 @@ licenseUrl
 requireLicenseAcceptance
     true
 copyright
-    Copyright 2014-2021
+    Copyright 2014-2022
 tags
     NLP OpenNLP Tokenizer Categorizer Chunker Parser POS NER IKVM
 description
@@ -21,4 +21,4 @@ description
 files
     ../bin/lib/**/*.dll ==> lib
 dependencies
-    IKVM 8.2.0-prerelease0392
+    IKVM LOCKEDVERSION

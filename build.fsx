@@ -79,12 +79,12 @@ let restoreFolderFromFile folder zipFile =
         zipFile |> unZipTo folder
 
 // Location of IKVM Compiler
-let ikvmVersion = @"8.2.0-prerelease.392"
+let ikvmVersion = @"8.2.0-prerelease.809"
 let ikvmRootFolder = root </> "paket-files" </> "github.com"
 
 let ikvmcFolder_NetFramework = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-net461-win7-x64"
-let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-net461-win7-x64"
-let ikvmcFolder_NetCore_Linux = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-net461-linux-x64"
+let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-netcoreapp3.1-win7-x64"
+let ikvmcFolder_NetCore_Linux = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-netcoreapp3.1-linux-x64"
 
 let ikvmcExe_NetFramework = ikvmcFolder_NetFramework </> "ikvmc.exe"
 let ikvmcExe_NetCore_Windows = ikvmcFolder_NetCore_Windows </> "ikvmc.exe"
