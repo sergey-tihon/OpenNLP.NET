@@ -160,6 +160,8 @@ let IKVMCompile framework workingDirectory keyFile tasks =
             bprintf sb " %s -out:%s" task.JarFile task.DllFile
             bprintf sb " -keyfile:%s" origKeyFile
             //bprintf sb " -debug" // Not supported on Mono
+            bprintf sb " -nostdlib -r:%s/refs/*.dll" (if Environment.isWindows then ikvmcFolder_NetFramework else ikvmcFolder_NetCore_Windows)
+
             sb.ToString()
 
         if cache.Contains task.JarFile
