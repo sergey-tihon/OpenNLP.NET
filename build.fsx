@@ -34,7 +34,6 @@ open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.DotNet
-open Fake.Tools
 open DotLang.CodeAnalysis.Syntax
 
 Target.initEnvironment()
@@ -79,12 +78,11 @@ let restoreFolderFromFile folder zipFile =
         zipFile |> unZipTo folder
 
 // Location of IKVM Compiler
-let ikvmVersion = @"8.2.0-prerelease.809"
 let ikvmRootFolder = root </> "paket-files" </> "github.com"
 
-let ikvmcFolder_NetFramework = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-net461-win7-x64"
-let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-netcoreapp3.1-win7-x64"
-let ikvmcFolder_NetCore_Linux = ikvmRootFolder </> "ikvm-" + ikvmVersion + "-tools-netcoreapp3.1-linux-x64"
+let ikvmcFolder_NetFramework = ikvmRootFolder </> "any"
+let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "win7-x64"
+let ikvmcFolder_NetCore_Linux = ikvmRootFolder </> "linux-x64"
 
 let ikvmcExe_NetFramework = ikvmcFolder_NetFramework </> "ikvmc.exe"
 let ikvmcExe_NetCore_Windows = ikvmcFolder_NetCore_Windows </> "ikvmc.exe"
@@ -147,21 +145,28 @@ let IKVMCompile framework workingDirectory keyFile tasks =
     let cache = HashSet<_>()
     let rec compile (task:IKVMcTask) =
         let getIKVMCommandLineArgs() =
+            let dependencies =
+                task.Dependencies
+                |> Seq.collect (fun x ->
+                    compile x
+                    x.GetDllReferences()
+                )
+                |> Seq.distinct
+
             let sb = Text.StringBuilder()
-            task.Dependencies
-            |> Seq.collect (fun x ->
-                compile x
-                x.GetDllReferences()
-            )
-            |> Seq.distinct
-            |> Seq.iter (bprintf sb " -r:%s")
+            bprintf sb " -out:%s" task.DllFile
             if not <| String.IsNullOrEmpty(task.Version)
                 then task.Version |> bprintf sb " -version:%s"
-            bprintf sb " %s -out:%s" task.JarFile task.DllFile
-            bprintf sb " -keyfile:%s" origKeyFile
+            //bprintf sb " -keyfile:%s" origKeyFile
             //bprintf sb " -debug" // Not supported on Mono
-            bprintf sb " -nostdlib -r:%s/refs/*.dll" (if Environment.isWindows then ikvmcFolder_NetFramework else ikvmcFolder_NetCore_Windows)
 
+            //bprintf sb " -nostdlib"
+            //!! (sprintf "%s/refs/*.dll" (if Environment.isWindows then ikvmcFolder_NetFramework else ikvmcFolder_NetCore_Windows))
+            //|> Seq.iter (fun lib -> bprintf sb " -r:%s" lib)
+
+            dependencies |> Seq.iter (bprintf sb " -r:%s")
+
+            bprintf sb " \"%s\"" task.JarFile
             sb.ToString()
 
         if cache.Contains task.JarFile
@@ -269,7 +274,8 @@ Target.create "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.4/lib"
+let openNLPDir = root </> "paket-files/dlcdn.apache.org/apache-opennlp-2.0.0/lib"
+let frameworks = ["netcoreapp3.1"; "net461"]
 
 Target.create "Compile" (fun _ ->
     // Get *.jar file for compilation
@@ -284,19 +290,14 @@ Target.create "Compile" (fun _ ->
     if not <| File.Exists dotFile then
         buildJDepsGraph dotFile openNLPDir jars
 
-    let framework  = @"net461"
-    let ikvmDir  = @"bin/lib/" + framework
-    Shell.mkdir ikvmDir
+    for framework in frameworks do
+        Trace.trace $"Compiling for {framework}"
+        
+        let ikvmDir  = @"bin/lib/" + framework
+        Shell.mkdir ikvmDir
 
-    createCompilationGraph dotFile openNLPDir jars
-    |> IKVMCompile framework ikvmDir keyFile
-
-    let framework  = @"netcoreapp3.1"
-    let ikvmDir  = @"bin/lib/" + framework
-    Shell.mkdir ikvmDir
-
-    createCompilationGraph dotFile openNLPDir jars
-    |> IKVMCompile framework ikvmDir keyFile
+        createCompilationGraph dotFile openNLPDir jars
+        |> IKVMCompile framework ikvmDir keyFile
 )
 
 Target.create "NuGet" (fun _ ->
@@ -307,29 +308,24 @@ Target.create "NuGet" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Build and run test projects
 
-Target.create "BuildTests" (fun _ ->
-    let result = DotNet.exec id "build" "OpenNLP.NET.sln -c Release"
+let dotnet cmd args =
+    let result = DotNet.exec id cmd args
     if not result.OK
-    then failwithf "Build failed: %A" result.Errors
+    then failwithf "Failed: %A" result.Errors
+
+Target.create "BuildTests" (fun _ ->
+    dotnet "build" "OpenNLP.NET.sln -c Release"
 )
 
 Target.create "RunTests" (fun _ ->
-
-    let doubleQuote = '"'
-
-    Trace.trace $"Running tests for netcoreapp3.1"
-    let libs = !! "tests/**/bin/Release/netcoreapp3.1/*.Tests.dll"
-    for lib in libs do
-        let result = DotNet.exec id "test" $"{lib} -c Release --no-build --logger:{doubleQuote}console;verbosity=normal{doubleQuote} --logger:{doubleQuote}trx;LogFileName={doubleQuote}netcoreapp3.1-{Path.GetFileNameWithoutExtension(lib)}-TestResults.trx{doubleQuote}"
-        if not result.OK
-        then failwithf "Tests failed: %A" result.Errors
-
-    Trace.trace $"Running tests for net461"
-    let libs = !! "tests/**/bin/Release/net461/*.Tests.dll"
-    for lib in libs do
-        let result = DotNet.exec id "test" $"{lib} -c Release --no-build --logger:{doubleQuote}console;verbosity=normal{doubleQuote} --logger:{doubleQuote}trx;LogFileName={doubleQuote}net461-{Path.GetFileNameWithoutExtension(lib)}-TestResults.trx{doubleQuote}"
-        if not result.OK
-        then failwithf "Tests failed: %A" result.Errors
+    for framework in frameworks do           
+        Trace.trace $"Running tests for {framework}"
+        
+        !! $"tests/**/bin/Release/{framework}/*.Tests.dll"
+        |> Seq.iter (fun lib ->
+            let logFileName = $"""${framework}-{Path.GetFileNameWithoutExtension(lib)}-TestResults.trx"""
+            dotnet "test" $"{lib} -c Release --no-build --logger:\"console;verbosity=normal\" --logger:\"trx;LogFileName={logFileName}\""
+        )
 )
 
 // --------------------------------------------------------------------------------------
