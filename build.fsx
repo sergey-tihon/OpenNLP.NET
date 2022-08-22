@@ -80,13 +80,14 @@ let restoreFolderFromFile folder zipFile =
 // Location of IKVM Compiler
 let ikvmRootFolder = root </> "paket-files" </> "github.com"
 
-let ikvmcFolder_NetFramework = ikvmRootFolder </> "any"
-let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "win7-x64"
-let ikvmcFolder_NetCore_Linux = ikvmRootFolder </> "linux-x64"
+let ikvmcFolder_NetFramework = ikvmRootFolder </> "tools-ikvmc-net461/any"
+let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "tools-ikvmc-netcoreapp3.1/win7-x64"
 
 let ikvmcExe_NetFramework = ikvmcFolder_NetFramework </> "ikvmc.exe"
 let ikvmcExe_NetCore_Windows = ikvmcFolder_NetCore_Windows </> "ikvmc.exe"
-let ikvmcExe_NetCore_Linux = ikvmcFolder_NetCore_Linux </> "ikvmc.exe"
+
+let ikvmRuntime_NetFramework = ikvmRootFolder </> "bin-net461"
+let ikvmRuntime_NetCore = ikvmRootFolder </> "bin-netcoreapp3.1"
 
 type IKVMcTask(jar:string, version:string) =
     member __.JarFile = jar
@@ -110,25 +111,11 @@ let IKVMCompile framework workingDirectory keyFile tasks =
     let (|StartsWith|_|) needle (haystack : string) = if haystack.StartsWith(string needle) then Some() else None
     let command =
         (match framework with
-        | StartsWith "net4" () ->
-            (if Environment.isWindows
-            then ikvmcExe_NetFramework
-            else "mono")
-        | _ ->
-            (if Environment.isWindows
-            then ikvmcExe_NetCore_Windows
-            else ikvmcExe_NetCore_Linux))
-    let commandArgs args =
-        (match framework with
-        | StartsWith "net4" () ->
-            (if not <| Environment.isWindows
-            then ikvmcExe_NetFramework + " " + args
-            else args)
-        | _ -> args)
+        | StartsWith "net4" -> ikvmcExe_NetFramework
+        | _ -> ikvmcExe_NetCore_Windows)
          
     let ikvmc args =
-        let cArgs = commandArgs args
-        CreateProcess.fromRawCommandLine command cArgs
+        CreateProcess.fromRawCommandLine command args
         |> CreateProcess.withWorkingDirectory (DirectoryInfo(workingDirectory).FullName)
         |> CreateProcess.withTimeout timeOut
         |> CreateProcess.ensureExitCode
@@ -163,6 +150,17 @@ let IKVMCompile framework workingDirectory keyFile tasks =
             //bprintf sb " -nostdlib"
             //!! (sprintf "%s/refs/*.dll" (if Environment.isWindows then ikvmcFolder_NetFramework else ikvmcFolder_NetCore_Windows))
             //|> Seq.iter (fun lib -> bprintf sb " -r:%s" lib)
+            if framework = "netcoreapp3.1" then
+                bprintf sb " -nostdlib"
+                //for lib in ["netstandard"] do
+                !! (sprintf "%s/refs/*.dll" ikvmcFolder_NetCore_Windows)
+                |> Seq.iter (fun lib -> bprintf sb " -r:%s" lib)
+            
+            let runtime =
+                match framework with
+                | StartsWith "net4" () -> ikvmRuntime_NetFramework
+                | _ -> ikvmRuntime_NetCore
+            bprintf sb " -runtime:%s/IKVM.Runtime.dll" runtime
 
             dependencies |> Seq.iter (bprintf sb " -r:%s")
 
@@ -275,7 +273,7 @@ Target.create "Clean" (fun _ ->
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
 let openNLPDir = root </> "paket-files/dlcdn.apache.org/apache-opennlp-2.0.0/lib"
-let frameworks = ["netcoreapp3.1"; "net461"]
+let frameworks = ["net461"; "netcoreapp3.1"]
 
 Target.create "Compile" (fun _ ->
     // Get *.jar file for compilation

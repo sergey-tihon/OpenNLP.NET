@@ -330,8 +330,10 @@ NUGET
       System.Xml.ReaderWriter (>= 4.3) - restriction: && (< monoandroid) (< monotouch) (< net46) (>= netstandard1.3) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos)
 HTTP
   remote: https://github.com
-    IKVM-8.2.1-tools-ikvmc-net461.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-net461.zip)
-    IKVM-8.2.1-tools-ikvmc-netcoreapp3.1.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-netcoreapp3.1.zip)
+    bin-net461/bin.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-net461.zip)
+    bin-netcoreapp3.1/bin.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-netcoreapp3.1.zip)
+    tools-ikvmc-net461/tools.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-net461.zip)
+    tools-ikvmc-netcoreapp3.1/tools.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-netcoreapp3.1.zip)
   remote: https://dlcdn.apache.org
     apache-opennlp-2.0.0-bin.zip (/opennlp/opennlp-2.0.0/apache-opennlp-2.0.0-bin.zip)
   remote: http://opennlp.sourceforge.net

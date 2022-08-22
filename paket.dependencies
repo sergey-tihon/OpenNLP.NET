@@ -6,8 +6,10 @@ nuget NUnit3TestAdapter
 nuget Microsoft.NET.Test.Sdk
 nuget Microsoft.NETFramework.ReferenceAssemblies
 
-http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-net461.zip
-http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-netcoreapp3.1.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-net461.zip tools-ikvmc-net461/tools.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-netcoreapp3.1.zip tools-ikvmc-netcoreapp3.1/tools.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-net461.zip bin-net461/bin.zip
+http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-netcoreapp3.1.zip bin-netcoreapp3.1/bin.zip
 
 http https://dlcdn.apache.org/opennlp/opennlp-2.0.0/apache-opennlp-2.0.0-bin.zip
 
