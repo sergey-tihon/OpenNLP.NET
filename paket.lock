@@ -49,7 +49,6 @@ NUGET
       Microsoft.NETFramework.ReferenceAssemblies.net471 (>= 1.0.3) - restriction: && (>= net471) (< net472)
       Microsoft.NETFramework.ReferenceAssemblies.net472 (>= 1.0.3) - restriction: && (>= net472) (< net48)
       Microsoft.NETFramework.ReferenceAssemblies.net48 (>= 1.0.3) - restriction: >= net48
-      Microsoft.NETFramework.ReferenceAssemblies.net481 (>= 1.0.3) - restriction: < net20
     Microsoft.NETFramework.ReferenceAssemblies.net20 (1.0.3) - restriction: && (>= net20) (< net35)
     Microsoft.NETFramework.ReferenceAssemblies.net35 (1.0.3) - restriction: && (>= net35) (< net40)
     Microsoft.NETFramework.ReferenceAssemblies.net40 (1.0.3) - restriction: && (>= net40) (< net45)
@@ -63,7 +62,6 @@ NUGET
     Microsoft.NETFramework.ReferenceAssemblies.net471 (1.0.3) - restriction: && (>= net471) (< net472)
     Microsoft.NETFramework.ReferenceAssemblies.net472 (1.0.3) - restriction: && (>= net472) (< net48)
     Microsoft.NETFramework.ReferenceAssemblies.net48 (1.0.3) - restriction: >= net48
-    Microsoft.NETFramework.ReferenceAssemblies.net481 (1.0.3) - restriction: < net20
     Microsoft.TestPlatform.ObjectModel (17.3) - restriction: >= netcoreapp1.0
       NuGet.Frameworks (>= 4.6.4) - restriction: && (>= netcoreapp1.0) (< netstandard2.0)
       NuGet.Frameworks (>= 5.11) - restriction: || (&& (>= net45) (< netstandard1.3)) (&& (< net45) (< netcoreapp1.0) (>= netstandard2.0) (< uap10.0)) (>= net451) (>= netcoreapp2.1)
@@ -336,8 +334,8 @@ HTTP
     bin-netcoreapp3.1/bin.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-netcoreapp3.1.zip)
     tools-ikvmc-net461/tools.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-net461.zip)
     tools-ikvmc-netcoreapp3.1/tools.zip (/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-tools-ikvmc-netcoreapp3.1.zip)
-  remote: https://dlcdn.apache.org
-    apache-opennlp-2.0.0-bin.zip (/opennlp/opennlp-2.0.0/apache-opennlp-2.0.0-bin.zip)
+  remote: https://archive.apache.org
+    apache-opennlp-1.9.4-bin.zip (/dist/opennlp/opennlp-1.9.4/apache-opennlp-1.9.4-bin.zip)
   remote: http://opennlp.sourceforge.net
     en-chunker.bin (/models-1.5/en-chunker.bin)
     en-ner-date.bin (/models-1.5/en-ner-date.bin)

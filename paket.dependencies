@@ -11,7 +11,7 @@ http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-too
 http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-net461.zip bin-net461/bin.zip
 http https://github.com/ikvm-revived/ikvm/releases/download/8.2.1/IKVM-8.2.1-bin-netcoreapp3.1.zip bin-netcoreapp3.1/bin.zip
 
-http https://dlcdn.apache.org/opennlp/opennlp-2.0.0/apache-opennlp-2.0.0-bin.zip
+http https://archive.apache.org/dist/opennlp/opennlp-1.9.4/apache-opennlp-1.9.4-bin.zip
 
 http http://opennlp.sourceforge.net/models-1.5/en-token.bin
 http http://opennlp.sourceforge.net/models-1.5/en-sent.bin

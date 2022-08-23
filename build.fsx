@@ -272,7 +272,7 @@ Target.create "Clean" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-let openNLPDir = root </> "paket-files/dlcdn.apache.org/apache-opennlp-2.0.0/lib"
+let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.4/lib"
 let frameworks = ["net461"; "netcoreapp3.1"]
 
 Target.create "Compile" (fun _ ->
