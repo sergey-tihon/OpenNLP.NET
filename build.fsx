@@ -22,7 +22,6 @@ nuget Fake.Api.GitHub //"
 
 open System
 open System.IO
-open System.IO.Compression
 open System.Collections.Generic
 open System.Text.RegularExpressions
 open Microsoft.FSharp.Core
@@ -49,45 +48,25 @@ let release = ReleaseNotes.load "RELEASE_NOTES.md"
 // --------------------------------------------------------------------------------------
 // IKVM.NET compilation helpers
 
-let fixFileNames path =
-    use file = File.Open(path, FileMode.Open, FileAccess.ReadWrite)
-    use archive = new ZipArchive(file, ZipArchiveMode.Update)
-    archive.Entries
-    |> Seq.toList
-    |> List.filter(fun x -> x.FullName.Contains(":"))
-    |> List.iter (fun entry ->
-        printfn "%s " entry.FullName
-        let newName = entry.FullName.Replace(":","_")
-        let newEntry = archive.CreateEntry(newName)
-        begin
-            use a = entry.Open()
-            use b = newEntry.Open()
-            a.CopyTo(b)
-        end
-        entry.Delete()
-       )
-
-let unZipTo toDir file =
-    Trace.trace "Renaming files inside zip archive ..."
-    fixFileNames file
-    Trace.tracefn "Unzipping file '%s' to '%s'" file toDir
-    Compression.ZipFile.ExtractToDirectory(file, toDir)
-
-let restoreFolderFromFile folder zipFile =
-    if not <| Directory.Exists folder then
-        zipFile |> unZipTo folder
+type TargetRuntime =
+    | Net_461
+    | NetCore_3_1
+    override this.ToString() =
+        match this with
+        | Net_461 -> "net461"
+        | NetCore_3_1 -> "netcoreapp3.1"
+    
 
 // Location of IKVM Compiler
 let ikvmRootFolder = root </> "paket-files" </> "github.com"
 
-let ikvmcFolder_NetFramework = ikvmRootFolder </> "tools-ikvmc-net461/any"
-let ikvmcFolder_NetCore_Windows = ikvmRootFolder </> "tools-ikvmc-netcoreapp3.1/win7-x64"
+let getIkmvcFolder = function
+    | Net_461       -> ikvmRootFolder </> "tools-ikvmc-net461/any"
+    | NetCore_3_1   -> ikvmRootFolder </> "tools-ikvmc-netcoreapp3.1/win7-x64"
 
-let ikvmcExe_NetFramework = ikvmcFolder_NetFramework </> "ikvmc.exe"
-let ikvmcExe_NetCore_Windows = ikvmcFolder_NetCore_Windows </> "ikvmc.exe"
-
-let ikvmRuntime_NetFramework = ikvmRootFolder </> "bin-net461"
-let ikvmRuntime_NetCore = ikvmRootFolder </> "bin-netcoreapp3.1"
+let getIkvmRuntimeFolder = function
+    | Net_461       -> ikvmRootFolder </> "bin-net461"
+    | NetCore_3_1   -> ikvmRootFolder </> "bin-netcoreapp3.1"
 
 type IKVMcTask(jar:string, version:string) =
     member __.JarFile = jar
@@ -108,12 +87,7 @@ let IKVMCompile framework workingDirectory keyFile tasks =
         if (File.Exists keyFile) then
             Path.GetFileName(keyFile)
         else keyFile
-    let (|StartsWith|_|) needle (haystack : string) = if haystack.StartsWith(string needle) then Some() else None
-    let command =
-        (match framework with
-        | StartsWith "net4" -> ikvmcExe_NetFramework
-        | _ -> ikvmcExe_NetCore_Windows)
-         
+    let command = (getIkmvcFolder framework) </> "ikvmc.exe"
     let ikvmc args =
         CreateProcess.fromRawCommandLine command args
         |> CreateProcess.withWorkingDirectory (DirectoryInfo(workingDirectory).FullName)
@@ -144,22 +118,15 @@ let IKVMCompile framework workingDirectory keyFile tasks =
             bprintf sb " -out:%s" task.DllFile
             if not <| String.IsNullOrEmpty(task.Version)
                 then task.Version |> bprintf sb " -version:%s"
-            //bprintf sb " -keyfile:%s" origKeyFile
+            bprintf sb " -keyfile:%s" origKeyFile
             //bprintf sb " -debug" // Not supported on Mono
 
-            //bprintf sb " -nostdlib"
-            //!! (sprintf "%s/refs/*.dll" (if Environment.isWindows then ikvmcFolder_NetFramework else ikvmcFolder_NetCore_Windows))
-            //|> Seq.iter (fun lib -> bprintf sb " -r:%s" lib)
-            if framework = "netcoreapp3.1" then
+            if framework = NetCore_3_1 then
                 bprintf sb " -nostdlib"
-                //for lib in ["netstandard"] do
-                !! (sprintf "%s/refs/*.dll" ikvmcFolder_NetCore_Windows)
+                !! (sprintf "%s/refs/*.dll" (getIkmvcFolder framework))
                 |> Seq.iter (fun lib -> bprintf sb " -r:%s" lib)
             
-            let runtime =
-                match framework with
-                | StartsWith "net4" () -> ikvmRuntime_NetFramework
-                | _ -> ikvmRuntime_NetCore
+            let runtime = getIkvmRuntimeFolder framework
             bprintf sb " -runtime:%s/IKVM.Runtime.dll" runtime
 
             dependencies |> Seq.iter (bprintf sb " -r:%s")
@@ -239,18 +206,6 @@ let createCompilationGraph dotFile jarFolder (jars:Set<string>) =
             then yield getTask jar
     } |> Seq.toList
 
-let copyPackages fromDir toDir =
-    if (not <| Directory.Exists(toDir))
-        then Directory.CreateDirectory(toDir) |> ignore
-    Directory.GetFiles(fromDir)
-    |> Seq.filter (fun x -> Path.GetExtension(x) = ".nupkg")
-    |> Seq.iter   (fun x -> File.Copy(x, Path.Combine(toDir, Path.GetFileName(x)), true))
-
-let removeNotAssembliesFrom dir =
-    !! (dir + @"/*.*")
-      -- (dir + @"/*.dll")
-      |> Seq.iter (System.IO.File.Delete)
-
 let createNuGetPackage template =
     Paket.pack(fun p ->
         { p with
@@ -273,7 +228,7 @@ Target.create "Clean" (fun _ ->
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
 let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.4/lib"
-let frameworks = ["net461"; "netcoreapp3.1"]
+let frameworks = [Net_461; NetCore_3_1]
 
 Target.create "Compile" (fun _ ->
     // Get *.jar file for compilation
@@ -291,7 +246,7 @@ Target.create "Compile" (fun _ ->
     for framework in frameworks do
         Trace.trace $"Compiling for {framework}"
         
-        let ikvmDir  = @"bin/lib/" + framework
+        let ikvmDir  = $"bin/lib/{framework}"
         Shell.mkdir ikvmDir
 
         createCompilationGraph dotFile openNLPDir jars
