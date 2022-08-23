@@ -1,7 +1,7 @@
 #r @"paket:
-source https://nuget.org/api/v2
-framework netstandard2.0
-nuget FSharp.Core 5.0.0
+source https://api.nuget.org/v3/index.json
+framework: net6.0
+nuget FSharp.Core
 nuget Mono.Cecil
 nuget System.IO.Compression.ZipFile
 nuget Graphviz.DotLanguage
@@ -18,12 +18,10 @@ nuget Fake.Api.GitHub //"
 
 #if !FAKE
 #load "./.fake/build.fsx/intellisense.fsx"
-#r "netstandard" // Temp fix for https://github.com/fsharp/FAKE/issues/1985
 #endif
 
 open System
 open System.IO
-open System.IO.Compression
 open System.Collections.Generic
 open System.Text.RegularExpressions
 open Microsoft.FSharp.Core
@@ -35,7 +33,6 @@ open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.DotNet
-open Fake.Tools
 open DotLang.CodeAnalysis.Syntax
 
 Target.initEnvironment()
@@ -51,36 +48,25 @@ let release = ReleaseNotes.load "RELEASE_NOTES.md"
 // --------------------------------------------------------------------------------------
 // IKVM.NET compilation helpers
 
-let fixFileNames path =
-    use file = File.Open(path, FileMode.Open, FileAccess.ReadWrite)
-    use archive = new ZipArchive(file, ZipArchiveMode.Update)
-    archive.Entries
-    |> Seq.toList
-    |> List.filter(fun x -> x.FullName.Contains(":"))
-    |> List.iter (fun entry ->
-        printfn "%s " entry.FullName
-        let newName = entry.FullName.Replace(":","_")
-        let newEntry = archive.CreateEntry(newName)
-        begin
-            use a = entry.Open()
-            use b = newEntry.Open()
-            a.CopyTo(b)
-        end
-        entry.Delete()
-       )
+type TargetRuntime =
+    | Net_461
+    | NetCore_3_1
+    override this.ToString() =
+        match this with
+        | Net_461 -> "net461"
+        | NetCore_3_1 -> "netcoreapp3.1"
+    
 
-let unZipTo toDir file =
-    Trace.trace "Renaming files inside zip archive ..."
-    fixFileNames file
-    Trace.tracefn "Unzipping file '%s' to '%s'" file toDir
-    Compression.ZipFile.ExtractToDirectory(file, toDir)
+// Location of IKVM Compiler
+let ikvmRootFolder = root </> "paket-files" </> "github.com"
 
-let restoreFolderFromFile folder zipFile =
-    if not <| Directory.Exists folder then
-        zipFile |> unZipTo folder
+let getIkmvcFolder = function
+    | Net_461       -> ikvmRootFolder </> "tools-ikvmc-net461/any"
+    | NetCore_3_1   -> ikvmRootFolder </> "tools-ikvmc-netcoreapp3.1/win7-x64"
 
-// Location of IKVM Compiler & ildasm / ilasm
-let ikvmcExe = root </> "paket-files/sergeytihon.files.wordpress.com/ikvm-8.1.5717.0/bin/ikvmc.exe"
+let getIkvmRuntimeFolder = function
+    | Net_461       -> ikvmRootFolder </> "bin-net461"
+    | NetCore_3_1   -> ikvmRootFolder </> "bin-netcoreapp3.1"
 
 type IKVMcTask(jar:string, version:string) =
     member __.JarFile = jar
@@ -96,11 +82,14 @@ type IKVMcTask(jar:string, version:string) =
 
 let timeOut = TimeSpan.FromSeconds(120.0)
 
-let IKVMCompile workingDirectory keyFile tasks =
+let IKVMCompile framework workingDirectory keyFile tasks =
+    let origKeyFile =
+        if (File.Exists keyFile) then
+            Path.GetFileName(keyFile)
+        else keyFile
+    let command = (getIkmvcFolder framework) </> "ikvmc.exe"
     let ikvmc args =
-        (if Environment.isWindows
-         then CreateProcess.fromRawCommandLine ikvmcExe args
-         else CreateProcess.fromRawCommandLine "mono" (ikvmcExe + " " + args))
+        CreateProcess.fromRawCommandLine command args
         |> CreateProcess.withWorkingDirectory (DirectoryInfo(workingDirectory).FullName)
         |> CreateProcess.withTimeout timeOut
         |> CreateProcess.ensureExitCode
@@ -117,17 +106,32 @@ let IKVMCompile workingDirectory keyFile tasks =
     let cache = HashSet<_>()
     let rec compile (task:IKVMcTask) =
         let getIKVMCommandLineArgs() =
+            let dependencies =
+                task.Dependencies
+                |> Seq.collect (fun x ->
+                    compile x
+                    x.GetDllReferences()
+                )
+                |> Seq.distinct
+
             let sb = Text.StringBuilder()
-            task.Dependencies
-            |> Seq.collect (fun x ->
-                compile x
-                x.GetDllReferences()
-            )
-            |> Seq.distinct
-            |> Seq.iter (bprintf sb " -r:%s")
+            bprintf sb " -out:%s" task.DllFile
             if not <| String.IsNullOrEmpty(task.Version)
                 then task.Version |> bprintf sb " -version:%s"
-            bprintf sb " %s -out:%s" task.JarFile task.DllFile
+            bprintf sb " -keyfile:%s" origKeyFile
+            //bprintf sb " -debug" // Not supported on Mono
+
+            if framework = NetCore_3_1 then
+                bprintf sb " -nostdlib"
+                !! (sprintf "%s/refs/*.dll" (getIkmvcFolder framework))
+                |> Seq.iter (fun lib -> bprintf sb " -r:%s" lib)
+            
+            let runtime = getIkvmRuntimeFolder framework
+            bprintf sb " -runtime:%s/IKVM.Runtime.dll" runtime
+
+            dependencies |> Seq.iter (bprintf sb " -r:%s")
+
+            bprintf sb " \"%s\"" task.JarFile
             sb.ToString()
 
         if cache.Contains task.JarFile
@@ -202,18 +206,6 @@ let createCompilationGraph dotFile jarFolder (jars:Set<string>) =
             then yield getTask jar
     } |> Seq.toList
 
-let copyPackages fromDir toDir =
-    if (not <| Directory.Exists(toDir))
-        then Directory.CreateDirectory(toDir) |> ignore
-    Directory.GetFiles(fromDir)
-    |> Seq.filter (fun x -> Path.GetExtension(x) = ".nupkg")
-    |> Seq.iter   (fun x -> File.Copy(x, Path.Combine(toDir, Path.GetFileName(x)), true))
-
-let removeNotAssembliesFrom dir =
-    !! (dir + @"/*.*")
-      -- (dir + @"/*.dll")
-      |> Seq.iter (System.IO.File.Delete)
-
 let createNuGetPackage template =
     Paket.pack(fun p ->
         { p with
@@ -229,13 +221,14 @@ let keyFile = @"./nuget/OpenNLP.snk"
 // Clean build results
 
 Target.create "Clean" (fun _ ->
-     Shell.cleanDirs ["bin"; "temp"]
+     Shell.cleanDirs ["bin"; "temp"; "TestResults"]
 )
 
 // --------------------------------------------------------------------------------------
 // Compile Stanford.NLP.CoreNLP and build NuGet package
 
-let openNLPDir = root </> "paket-files/dlcdn.apache.org/apache-opennlp-1.9.4/lib"
+let openNLPDir = root </> "paket-files/archive.apache.org/apache-opennlp-1.9.4/lib"
+let frameworks = [Net_461; NetCore_3_1]
 
 Target.create "Compile" (fun _ ->
     // Get *.jar file for compilation
@@ -246,15 +239,18 @@ Target.create "Compile" (fun _ ->
     if (jars.IsEmpty)
     then failwith "Found 0 *.jar files"
 
-    let ikvmDir  = @"bin/lib"
-    Shell.mkdir ikvmDir
-
     let dotFile = "nuget/OpenNLP.dot"
     if not <| File.Exists dotFile then
         buildJDepsGraph dotFile openNLPDir jars
 
-    createCompilationGraph dotFile openNLPDir jars
-    |> IKVMCompile ikvmDir keyFile
+    for framework in frameworks do
+        Trace.trace $"Compiling for {framework}"
+        
+        let ikvmDir  = $"bin/lib/{framework}"
+        Shell.mkdir ikvmDir
+
+        createCompilationGraph dotFile openNLPDir jars
+        |> IKVMCompile framework ikvmDir keyFile
 )
 
 Target.create "NuGet" (fun _ ->
@@ -265,23 +261,24 @@ Target.create "NuGet" (fun _ ->
 // --------------------------------------------------------------------------------------
 // Build and run test projects
 
-Target.create "BuildTests" (fun _ ->
-    let result = DotNet.exec id "build" "OpenNLP.NET.sln -c Release"
+let dotnet cmd args =
+    let result = DotNet.exec id cmd args
     if not result.OK
-    then failwithf "Build failed: %A" result.Errors
+    then failwithf "Failed: %A" result.Errors
+
+Target.create "BuildTests" (fun _ ->
+    dotnet "build" "OpenNLP.NET.sln -c Release"
 )
 
 Target.create "RunTests" (fun _ ->
-    let libs = !! "tests/**/bin/Release/net45/*.Tests.dll"
-    let args = String.Join(" ", libs)
-    let runner = "packages/NUnit.ConsoleRunner/tools/nunit3-console.exe"
-
-    (if Environment.isWindows
-     then CreateProcess.fromRawCommandLine runner args
-     else CreateProcess.fromRawCommandLine "mono" (runner + " " + args))
-    |> CreateProcess.ensureExitCode
-    |> Proc.run
-    |> ignore
+    for framework in frameworks do           
+        Trace.trace $"Running tests for {framework}"
+        
+        !! $"tests/**/bin/Release/{framework}/*.Tests.dll"
+        |> Seq.iter (fun lib ->
+            let logFileName = $"""${framework}-{Path.GetFileNameWithoutExtension(lib)}-TestResults.trx"""
+            dotnet "test" $"{lib} -c Release --no-build --logger:\"console;verbosity=normal\" --logger:\"trx;LogFileName={logFileName}\""
+        )
 )
 
 // --------------------------------------------------------------------------------------
