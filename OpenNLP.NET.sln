@@ -15,7 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{2DEDF5FA
 		RELEASE_NOTES.md = RELEASE_NOTES.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNLP.MavenReference.Tests", "tests\OpenNLP.MavenReference.Tests\OpenNLP.MavenReference.Tests.csproj", "{4A7BF7BC-832D-438D-A242-DFB493AC7819}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NameFinder.Trainer.Sample", "samples\NameFinder.Trainer.Sample\NameFinder.Trainer.Sample.fsproj", "{4A7BF7BC-832D-438D-A242-DFB493AC7819}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
