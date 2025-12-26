@@ -58,7 +58,7 @@ jobs:
         with:
           dotnet-version: 6.0.x
       - name: Download OpenNLP.NET Tests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: tests
           path: tests
